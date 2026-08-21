@@ -1,6 +1,6 @@
 [package]
 name = "fleet-desktop"
-version = "1.0.4"
+version = "1.0.5"
 description = "A Tauri App"
 authors = ["you"]
 edition = "2021"
@@ -24,4 +24,8 @@ tauri-plugin-updater = "2"
 tauri-plugin-process = "2"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
+# مضافة 2026-08-21 (بند 47/49): اتصال HTTP حقيقي من داخل تطبيق سطح المكتب (لا من المتصفح) لربط
+# التتبع اللحظي (Sactracking.com) — يتجاوز قيد CORS الذى يمنع أى اتصال مباشر من متصفح/صفحة ويب
+# محلية (origin=null)، لأن هذا الطلب يصدر من البرنامج نفسه (عميل HTTP فى Rust) لا من نافذة متصفح.
+reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
 
