@@ -24,7 +24,7 @@ jobs:
       - name: Cargo check
         run: cargo check --manifest-path src-tauri/Cargo.toml
       - name: Build unsigned NSIS installer artifact
-        shell: pwsh
+        shell: bash
         run: npm run tauri build -- --config '{"bundle":{"createUpdaterArtifacts":false}}'
       - name: Upload installer
         uses: actions/upload-artifact@v4

@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "project": "Naba Fleet System",
-  "createdAt": "2026-09-08T19:12:25.536Z",
+  "createdAt": "2026-09-08T19:38:39.192Z",
   "files": {
     "src/index.html": {
       "sha256": "094da3188e4efde82ed2df2fb745b1dd61aadcfee6c42d38bff19c578e49978b",
@@ -80,7 +80,7 @@
       "size": 1621
     },
     ".github/workflows/build-windows-artifact.yml": {
-      "sha256": "cc9e1824acfe9a701762760bffb7dcb8889b0bafd154faee4d0fd4cf6ccfdf91",
+      "sha256": "05f77988cab8d1a63c7b460756cc7d85c2c2d73725393197fdf7f58326677d02",
       "size": 1082
     },
     "scripts/naba-code-guardian.mjs": {
