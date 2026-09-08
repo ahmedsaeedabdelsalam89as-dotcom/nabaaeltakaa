@@ -1,0 +1,6 @@
+# يمنع تحويل Git التلقائي لنهايات الأسطر (LF <-> CRLF) عند التحميل على Windows، والذى كان يكسر فحص
+# preflight.mjs النصي الدقيق لمطابقة "name = ...\nversion = ..." داخل Cargo.lock.
+* text=auto eol=lf
+*.lock text eol=lf
+*.toml text eol=lf
+*.rs text eol=lf
