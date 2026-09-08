@@ -1,0 +1,179 @@
+{
+  "schema": 1,
+  "project": "Naba Fleet System",
+  "createdAt": "2026-09-07T21:16:58.900Z",
+  "files": {
+    "src/index.html": {
+      "sha256": "155580204b0e356d37c13f36ee3f0b0bbb4da6be7b5b48cc63eeff218fded78e",
+      "size": 5696879
+    },
+    "src/modules/naba-workspace.js": {
+      "sha256": "8ce1770312aaebc2a2a305fed161973f91f84e66469d78988b9d6708ce3fc70b",
+      "size": 12733
+    },
+    "src/styles/naba-workspace.css": {
+      "sha256": "f071a14f8c3bf7e093e9e304c9bc46ff8926df7fe39d65064ef1b3adc2f31c4b",
+      "size": 5035
+    },
+    "src-tauri/src/lib.rs": {
+      "sha256": "cd353d77e2ddd5d19313a95668f7cbbe782501b360cbe5d1a99a8a8f0b8890b8",
+      "size": 14613
+    },
+    "src-tauri/src/main.rs": {
+      "sha256": "761ff104a98a1bbd1fa884ab17eabc7a68fc1ded68d34885eb61c3aa468a48ab",
+      "size": 188
+    },
+    "src-tauri/Cargo.toml": {
+      "sha256": "d52f01d78c679d4c70d80d3ea22fa798dadd7cde067daaf756e772c5edb41796",
+      "size": 1310
+    },
+    "src-tauri/Cargo.lock": {
+      "sha256": "4bdb3ec77546cd3627a5b7de74a8a366d198e0106661938a9aadab313eb84306",
+      "size": 127059
+    },
+    "src-tauri/tauri.conf.json": {
+      "sha256": "910196cc814aebab1196c5fa6c32edc6b57140e6fbd8be723b2ce11a7b77b1a4",
+      "size": 1815
+    },
+    "src-tauri/tauri.no-updater.conf.json": {
+      "sha256": "045e55901593915f744feabfb9a952abeeaa02d23342681e2bbe236a0da221e3",
+      "size": 58
+    },
+    "src-tauri/capabilities/default.json": {
+      "sha256": "607f131e960d8061a9c34754f40108ee0085cd7f569c1a806ff494d16d82d682",
+      "size": 304
+    },
+    "package.json": {
+      "sha256": "c18c6203ec2be90ec3d5703325a4d29d371e9c03731d983a4cf7111a6f10e1d4",
+      "size": 1529
+    },
+    "package-lock.json": {
+      "sha256": "7b1d861a725d50d22843c532a2b480c84578a7d9fbc4fd12a2d1dc126ac3767b",
+      "size": 7232
+    },
+    "version.json": {
+      "sha256": "9be1a7bcea1a5cbd5d9a3dc9fb5b0cd0651963fe9dca6a8451aabf1ed798ed89",
+      "size": 269
+    },
+    "BUILD_WINDOWS.ps1": {
+      "sha256": "2028ec64e47ae117a30d21d8e4eaa1b65325bb191f7d608101dcccb4617b0936",
+      "size": 2306
+    },
+    "NABA_REPAIR_SOURCE.ps1": {
+      "sha256": "5f7f4f2d2be92a99946d87fe9e27cd4537532d2ff51a0a94c731ef5e6cd8c1e6",
+      "size": 270
+    },
+    "NABA_FINAL_WINDOWS_CERTIFY.ps1": {
+      "sha256": "af0d484779d5ec55630aa80819246378766d6ec65d07cb62334ee073e158b601",
+      "size": 3472
+    },
+    "NABA_CERTIFY_WINDOWS.cmd": {
+      "sha256": "3158b79867cf378278b545cd2547a262b853a6abeb815f77808ce32b5a58fcbc",
+      "size": 603
+    },
+    ".github/workflows/validate.yml": {
+      "sha256": "04300515b049af314bdd2f49b7d4567bed6237db6a8b7793074e409ab2590553",
+      "size": 683
+    },
+    ".github/workflows/build-windows.yml": {
+      "sha256": "46465e7ef932f5ca1a500d74448157cae447eafdb8402246a9fc76b00723f1fe",
+      "size": 1630
+    },
+    ".github/workflows/build-windows-artifact.yml": {
+      "sha256": "bbbb22463e439a2e7b8d53504e7ecc7a9b46b7d3c2f1761fea7ab5f0880ac40d",
+      "size": 1091
+    },
+    "scripts/naba-code-guardian.mjs": {
+      "sha256": "c572a7edc4066ee5495d66ab2e66cd394fc2a21d2a1811ce65e3f06e09f89b7c",
+      "size": 4695
+    },
+    "scripts/preflight.mjs": {
+      "sha256": "3eba0b646b792914659d0b3770bb7c3150f6132aa712efaf178e5f95238945af",
+      "size": 6071
+    },
+    "scripts/security-smoke.mjs": {
+      "sha256": "4babdd110775798b5b9addf39a45af2623be7c9f00a117777b444f3ebd25a528",
+      "size": 4899
+    },
+    "scripts/guardian-regression-smoke.mjs": {
+      "sha256": "74896ea0488c8ba17381f9bae5c94834ae1bcdf8603cd21758f714ef4ff67d9b",
+      "size": 6681
+    },
+    "scripts/guardian-selftest.mjs": {
+      "sha256": "7a87cf9d215c96fa8c445a378d0b80c3f41b1809cc5e76fc983a9e87c4e756a5",
+      "size": 3459
+    },
+    "scripts/command-center-ui-smoke.mjs": {
+      "sha256": "394d8eaf5934e94134bf34f1edbf00dddf4a52f708b24987acf25af5fe45b89e",
+      "size": 3549
+    },
+    "scripts/android-static-smoke.mjs": {
+      "sha256": "04695d3ea0aec2a63f17fab6f9788284ea830730985774bf23e053b9eb2bf1b3",
+      "size": 1604
+    },
+    "scripts/xss-regression-smoke.mjs": {
+      "sha256": "8120d443d2282b005a96b744a32ca12a1447eabd2fe53ac8ca4ef1af7f84d297",
+      "size": 1954
+    },
+    "scripts/windows-build-gate-smoke.mjs": {
+      "sha256": "7f9ffd9be194bca11e37bc233e6c98b116603fbd737207a38ee1cbcfa093b325",
+      "size": 2601
+    },
+    "scripts/dashboard-project-fallback-smoke.mjs": {
+      "sha256": "1eec081dc70ce81808647583d32c3134d565e24dde8260f6cbcde49c187cdd26",
+      "size": 623
+    },
+    "scripts/cognitive-smoke.mjs": {
+      "sha256": "0d5d7efa6e715b44b5f29bd7f50e2a6957a79c942d45ed1cfd06d89e105e4100",
+      "size": 2567
+    },
+    "scripts/hybrid-router-smoke.mjs": {
+      "sha256": "7816dc41b733cb583d8701cc2e4e3349f46e618da8fa028585fb176604c047cf",
+      "size": 3601
+    },
+    "scripts/workspace-smoke.mjs": {
+      "sha256": "9500cc9c20a8550503d6927f3582691f13fe0f8f792222ad35fe89f60d171fa1",
+      "size": 1040
+    },
+    "scripts/multimind-reliability.mjs": {
+      "sha256": "ae4af9222c2358489b7b5bc299aa8ea12db309ce022b564a14ee5c99fcf7c99d",
+      "size": 2887
+    },
+    "scripts/reflection-smoke.mjs": {
+      "sha256": "6eaecfab7a3990db10dab592417717ed169e982784cc147820180fb20b726c48",
+      "size": 1593
+    },
+    "scripts/executive-structure-smoke.mjs": {
+      "sha256": "695629c8fc67e956c4b23418d008e00b2cd9195f6b5431b6cc806ea9d32b61ec",
+      "size": 2368
+    },
+    "phone-bridge-android/app/src/main/AndroidManifest.xml": {
+      "sha256": "908e6747db2d41951a193f45077327cd9ba3b9d0893bfd70f5c7fc1c4fc6a1a0",
+      "size": 1077
+    },
+    "phone-bridge-android/app/src/main/java/com/nabaaltaqah/phonebridge/MainActivity.kt": {
+      "sha256": "a188e21c83ff493988da35e8a322f6339e0e13c5238b7f34632067cd1423f00d",
+      "size": 1925
+    },
+    "phone-bridge-android/app/src/main/java/com/nabaaltaqah/phonebridge/BridgeService.kt": {
+      "sha256": "55cbc5c3a65ed601cfe0e434f810737ec0906cc3c16963d8bdb9d941b8a7c7b8",
+      "size": 6103
+    },
+    "phone-bridge-android/app/src/main/java/com/nabaaltaqah/phonebridge/BridgeSecretStore.kt": {
+      "sha256": "59290676b4e8f9b66beb7f478fecbcd8f4cad077488791f94ef427dce5028742",
+      "size": 2858
+    },
+    "phone-bridge-android/app/build.gradle.kts": {
+      "sha256": "d9914acb79aac18798d2a9bad35baad2b9344850ec97fd343b5798de8b09e4b8",
+      "size": 298
+    },
+    "phone-bridge-android/build.gradle.kts": {
+      "sha256": "50425357e4449207a6e3098fa4f4dc66864a870859025051fc809589ddb858df",
+      "size": 142
+    },
+    "phone-bridge-android/settings.gradle.kts": {
+      "sha256": "747bc19a41a217ce53f2b9df4fab5e313cc2f28dd8bbff00ab24bf2183ae9082",
+      "size": 275
+    }
+  }
+}

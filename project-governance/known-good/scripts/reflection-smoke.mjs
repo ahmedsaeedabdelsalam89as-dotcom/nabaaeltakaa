@@ -1,0 +1,12 @@
+import fs from 'node:fs';import vm from 'node:vm';
+const html=fs.readFileSync(new URL('../src/index.html',import.meta.url),'utf8');
+const a=html.indexOf('// NABA Reflection & Continuous Evals v1.10');const b=html.indexOf("if(typeof setTimeout==='function')",a);
+if(a<0||b<a) throw new Error('reflection block missing');
+const store=new Map();const sandbox={console,Date,JSON,Math,Number,String,Array,Object,isFinite,localStorage:{getItem:k=>store.get(k)??null,setItem:(k,v)=>store.set(k,String(v))},window:{NabaFleetAI:{}},nabaAiExecutiveThink:(p)=>({ok:true,executive:{decisionState:'pilot',recommended:{feasibility:{classification:'pilot'}},confidence:.7},perspectives:[{independent:true,peerExposure:false}]})};
+vm.createContext(sandbox);vm.runInContext(html.slice(a,b),sandbox);
+const x=sandbox.nabaAiReflect('case1',{decisionState:'pilot',expectedScore:.8},{score:.5,success:false,reason:'delay'});
+if(x.success!==false||!x.proposal?.requiresHumanApproval) throw new Error('reflection governance failed');
+const snap=sandbox.nabaAiReflectionSnapshot();if(snap.count!==1)throw new Error('reflection persistence failed');
+const prop=sandbox.nabaAiSkillEvolutionProposals();if(!prop.length||prop[0].status!=='proposal_only')throw new Error('skill evolution must be proposal only');
+const ev=sandbox.nabaAiContinuousEval([{name:'independent',problem:'x',expect:{decisionState:'pilot',feasibility:'pilot',independentFirstPass:true}}]);if(!ev.ok)throw new Error('continuous eval failed');
+console.log('REFLECTION_SMOKE_OK',JSON.stringify({stored:snap.count,proposalOnly:true,evals:ev.total}));

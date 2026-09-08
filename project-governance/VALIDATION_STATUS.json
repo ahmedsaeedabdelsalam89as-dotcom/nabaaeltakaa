@@ -1,0 +1,55 @@
+{
+  "schema": 1,
+  "version": "1.10.1",
+  "date": "2026-09-07",
+  "local_gate": "PASS_RC_LOCAL",
+  "data_bundle_sha256": "b9171a8aeefb22378ddc67a4c91caadd2b4d016da5cf43e21ab7846bf0271867",
+  "approved_local": [
+    "baseline",
+    "version",
+    "preflight",
+    "data_bundle",
+    "naba_command_center",
+    "backup_restore",
+    "persistence",
+    "sync_source",
+    "xss_print",
+    "tauri_static",
+    "rust_static",
+    "android_static",
+    "ai_suites",
+    "guardian",
+    "ci_release_source"
+  ],
+  "pending_external": [
+    "windows_tauri_runtime_nsis",
+    "firebase_live_rules",
+    "gmail_live",
+    "tracking_live",
+    "signed_updater",
+    "cargo_check_locked_on_windows_or_ci",
+    "dependency_registry_audit"
+  ],
+  "deferred_hardening": [
+    "vendor_remote_runtime_libraries",
+    "remove_all_inline_handlers_unsafe_inline"
+  ],
+  "data_warnings": [
+    "FLEET plate أ ق أ 3105 driver name has trailing whitespace versus HR source; no operational data auto-edited"
+  ],
+  "guardian": {
+    "critical_files": 40,
+    "verify": "PASS",
+    "self_test": "PASS",
+    "ledger_preserved": true,
+    "manifest_set_guard": true
+  },
+  "external_security_checks": {
+    "tauri_origin_confusion": "PASS: tauri 2.11.5 > patched 2.11.1",
+    "firebase_etag_design": "MATCHES_OFFICIAL_REST_CONDITIONAL_REQUESTS"
+  },
+  "final_human_gates": [
+    "run NABA_FINAL_WINDOWS_CERTIFY.ps1 once on Windows",
+    "install generated NSIS once and press 🧪 فحص ذاتي شامل once"
+  ]
+}

@@ -1,0 +1,37 @@
+NABA Fleet System 1.2.0 — Integration Audit (2026-09-07)
+
+PASS | AI Core v8
+PASS | Skills Registry
+PASS | Driver Decision
+PASS | Data Confidence
+PASS | Command Center v4
+PASS | Voice I/O
+PASS | Agent Runtime / Task Queue
+PASS | Proactive Smart Agent
+PASS | Workflow Engine
+PASS | Outcome Ledger
+PASS | Governance Guard
+PASS | Health Check
+PASS | Tracking Tauri bridge JS
+PASS | Desktop updater UI
+PASS | Auto updater startup
+PASS | AbortSignal clone regression fixed
+PASS | data-bundle unchanged from v8
+PASS | Tauri identifier preserved
+PASS | Tauri productName preserved
+PASS | Tauri version 1.2.0
+PASS | Rust tracking_api_get preserved
+PASS | Updater plugin preserved
+PASS | Process plugin preserved
+
+data-bundle sha256: b9171a8aeefb22378ddc67a4c91caadd2b4d016da5cf43e21ab7846bf0271867
+HTML sha256: a4c0258c07fca9dbe5d6cd185984976022dcb76ee471e66998259ae22288184a
+
+Executed tests:
+- JavaScript syntax: node --check (PASS)
+- JSON parse: package.json, package-lock.json, tauri.conf.json, capabilities/default.json, version.json (PASS)
+- Static integration audit above (all expected PASS)
+
+Not executable in this environment:
+- cargo/rustc are unavailable, so Rust compile and Tauri bundle build were NOT executed.
+- Windows NSIS .exe requires a Windows/Tauri build runner (local Windows or GitHub Actions).

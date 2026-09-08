@@ -1,0 +1,8 @@
+NABA Fleet System 1.10.1 - Windows Certification
+
+1) Do not use PowerShell manually.
+2) Double-click: NABA_CERTIFY_WINDOWS.cmd
+3) Leave the window open until PASS or FAILED.
+4) If FAILED, send only: project-governance\WINDOWS_CERTIFICATION_LAST.txt
+
+The CMD wrapper uses a temporary ExecutionPolicy Bypass only for this certification run.

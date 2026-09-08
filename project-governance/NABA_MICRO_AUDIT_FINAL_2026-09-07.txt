@@ -1,0 +1,22 @@
+NABA Fleet System 1.10.1 — MICRO-AUDITED RC
+Date: 2026-09-07
+
+LOCAL CERTIFICATION STATUS: PASS
+- npm test:all: PASS
+- NABA Code Guardian verify: 40/40 PASS
+- Guardian corruption/detect/repair self-test: PASS
+- Command Center 5-route smoke: PASS
+- Security/CSP/network bounds/least privilege: PASS
+- Backup/restore/sync/ETag/data-loss regressions: PASS
+- Android static hardening: PASS
+- XSS regressions: PASS
+- Windows native-command fail-closed gate: PASS
+- Windows runtime gate upgraded: process-alive is NOT sufficient; certification mode requires a WebView-generated runtime-self-test marker after all 5 NABA core commands run.
+
+PENDING ONLY ON TARGET WINDOWS MACHINE:
+- cargo check --locked in the actual Windows/Rust environment
+- Tauri/NSIS build
+- WebView2 runtime launch and automatic 5-command NABA self-test marker
+- Live external services/account-specific checks where configured (Firebase rules/auth, tracking, Gmail, phone bridge)
+
+No target-machine runtime claim is made until NABA_FINAL_WINDOWS_CERTIFY.ps1 reports PASS.

@@ -1,0 +1,22 @@
+{
+  "schema_version": "1.1",
+  "project": "Naba Fleet System",
+  "version": "1.10.1",
+  "mandatory_preflight": true,
+  "local_gate": "PASS",
+  "source_of_truth": "NABA_PROJECT_MEMORY_AND_ERROR_LEDGER.md",
+  "open_external": [
+    "ERR-005",
+    "ERR-033",
+    "Windows runtime/live services"
+  ],
+  "deferred_hardening": [
+    "ERR-021",
+    "ERR-036"
+  ],
+  "guardian_required": true,
+  "latest_fixed_error": "ERR-043",
+  "windows_certification_entry": "NABA_CERTIFY_WINDOWS.cmd",
+  "critical_files": 42,
+  "cargo_lock": "aligned_with_Cargo.toml_no_opener"
+}

@@ -1,0 +1,26 @@
+name: Validate Naba Fleet
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Install JS dependencies
+        run: npm ci
+      - name: Full regression gate
+        run: npm run test:all
+      - name: Guardian integrity verify
+        run: node scripts/naba-code-guardian.mjs --verify
+      - name: Rust check
+        run: cargo check --manifest-path src-tauri/Cargo.toml --locked
