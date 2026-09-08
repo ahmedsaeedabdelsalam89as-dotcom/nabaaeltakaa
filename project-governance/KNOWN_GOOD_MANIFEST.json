@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "project": "Naba Fleet System",
-  "createdAt": "2026-09-08T19:38:39.192Z",
+  "createdAt": "2026-09-08T23:15:09.118Z",
   "files": {
     "src/index.html": {
       "sha256": "094da3188e4efde82ed2df2fb745b1dd61aadcfee6c42d38bff19c578e49978b",
@@ -72,8 +72,8 @@
       "size": 603
     },
     ".github/workflows/validate.yml": {
-      "sha256": "1625a989c2c7ae8739e1d2ed7d36bd4ecef7c5a25314d338e6197d279f4b66c6",
-      "size": 674
+      "sha256": "c376280864b831ddec0eb97cc1e5c6c8a98a2fd7e855bfe6919b768a4155cf26",
+      "size": 917
     },
     ".github/workflows/build-windows.yml": {
       "sha256": "f26b2e7e7e10e24d8099137f5847e9a3e34fd94872893d6457b5898b26c4e446",
