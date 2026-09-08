@@ -8990,7 +8990,7 @@ function dateVal(o){
     return null;
   }
 function samePlate(o,p){return String(o&& (o.plate||o.vehicle||o.vehicle_plate||'')).trim()===p;}
-function daysSinceTs(t){return t?Math.max(0,(now-t)/86400000):null;}
+function daysSinceTs(t){return t?Math.max(0,(Date.now()-t)/86400000):null;}
 
 function computeCostIntelligence(){
   var arr=[];['PURCHASES','PURCHASE_REQUESTS','PURCHASE_CASES','QUOTES'].forEach(function(k){var a=APP[k]||[];arr=arr.concat(a.map(function(x){var n=Number(x.total||x.amount||x.price||x.cost||x.value||0);return {source:k,amount:isFinite(n)?n:0,status:String(x.status||'')};}));});
@@ -9034,7 +9034,7 @@ function computePredictiveFailureEngine(){
     for(var i=0;i<keys.length;i++){var v=o[keys[i]];if(v){var t=Date.parse(v);if(!isNaN(t))return t;}}
     return null;
   }
-  function daysSinceTs(t){return t?Math.max(0,(now-t)/86400000):null;}
+  function daysSinceTs(t){return t?Math.max(0,(Date.now()-t)/86400000):null;}
   function samePlate(o,p){return String(o&& (o.plate||o.vehicle||o.vehicle_plate||'')).trim()===p;}
   fleet.forEach(function(v){
     var plate=String(v.plate||v.id||'').trim(); if(!plate)return;
