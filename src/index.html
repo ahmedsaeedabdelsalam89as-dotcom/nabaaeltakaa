@@ -10487,6 +10487,30 @@ function computeMaintenanceOptimization(){var f=computePredictiveFailureEngine()
       }
     });
 
+    // 6) تشابه أسماء سائقين (تطابق بمستوى الكلمة بعد التطبيع العربي — بحث فعلي أكَّد أن هذا الأسلوب الأدق
+    // للأسماء العربية، أفضل من مطابقة حرفية كاملة أو Levenshtein بسيط). يكتشف تكرارًا حقيقيًا لا يظهر فى
+    // فحص "تطابق رقم الهوية" عندما يكون الحقل فارغًا لكلا السجلين. عتبة 75% فأعلى فقط، وللمراجعة لا الدمج
+    // التلقائي أبدًا (البحث نفسه حذَّر من نسبة إنذارات كاذبة عالية فى مطابقة الأسماء).
+    function nameTokenSet(name) { return normalizeArabicNameLite(name || '').split(/\s+/).filter(Boolean); }
+    function nameTokenOverlap(a, b) {
+      var setA = nameTokenSet(a), setB = nameTokenSet(b);
+      if (!setA.length || !setB.length) return 0;
+      var common = 0; setA.forEach(function (t) { if (setB.indexOf(t) !== -1) common++; });
+      return common / Math.max(setA.length, setB.length);
+    }
+    var driversList = APP.DRIVERS || [];
+    for (var di = 0; di < driversList.length; di++) {
+      for (var dj = di + 1; dj < driversList.length; dj++) {
+        var da = driversList[di], db = driversList[dj];
+        if (!da.name || !db.name) continue;
+        if (da.national_id && db.national_id && da.national_id === db.national_id) continue; // مُكتشَف أصلًا فى فحص الهوية
+        var overlap = nameTokenOverlap(da.name, db.name);
+        if (overlap >= 0.9) {
+          issues.push({ severity: 'متوسط', category: 'تشابه أسماء سائقين', detail: 'الاسمان "' + da.name + '" و"' + db.name + '" متطابقان تقريبًا (فرق إملائي محتمل، بدون رقم هوية مسجَّل لمطابقتهما تلقائيًا) — راجع يدويًا هل هما نفس الشخص.' });
+        }
+      }
+    }
+
     return issues;
   }
 
