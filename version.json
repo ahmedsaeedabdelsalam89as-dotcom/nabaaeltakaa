@@ -1,5 +1,5 @@
 {
-  "version": "1.10.2",
-  "released_at": "2026-09-07",
-  "notes": "Reliability hotfix: Code Guardian, safe restore/startup recovery, transactional Firebase sync, NABA Command Center routing/shortcuts, persistence rollback, PDF preview and Android bridge hardening."
+  "version": "1.10.4",
+  "released_at": "2026-09-09",
+  "notes": "Reliability hotfix: Code Guardian, safe restore/startup recovery, transactional Firebase sync, NABA Command Center routing/shortcuts, persistence rollback, PDF preview and Android bridge hardening, startup safe-step isolation, temporary driver assignment (separates permanent assigned driver from a temporary emergency assignment with auto-expiry), fixed daysSinceTs undefined-variable crash."
 }
