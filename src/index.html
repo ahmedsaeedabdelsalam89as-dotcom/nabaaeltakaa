@@ -5069,6 +5069,31 @@ return ctor.prototype=parent.prototype,child.prototype=new ctor,child.__super__=
     showToast('تم الإنهاء — رجعت للسائق المعتمد');
   }
 
+  // 🏷️ شارة "موثَّق/غير موثَّق" — بطلب أحمد الصريح: المصدرين الوحيدين المعتمدين هما منصة "تم" الرسمية
+  // (OFFICIAL_REGISTRY الموجودة أصلًا للمركبات) وكشف الـHR الرسمي (hr_approved الموجود أصلًا للسائقين).
+  // أي بيانات من مصدر آخر (استيراد ذكي عام، واتساب، إدخال يدوي) تُعتبَر "غير موثَّقة" لحين التأكد يدويًا —
+  // هذه شارة عرض فقط، لا تمنع استخدام البيانات ولا تحذفها.
+  function isVehicleVerifiedByTam(plate) {
+    if (!plate) return false;
+    var np = normPlate(plate);
+    return (APP.OFFICIAL_REGISTRY && APP.OFFICIAL_REGISTRY.records || []).some(function (r) { return normPlate(r.plate) === np; });
+  }
+  window.isVehicleVerifiedByTam = isVehicleVerifiedByTam;
+
+  function isDriverVerifiedByHR(driverNameOrObj) {
+    var d = (typeof driverNameOrObj === 'object' && driverNameOrObj) ? driverNameOrObj :
+      (APP.DRIVERS || []).find(function (x) { return x.name === driverNameOrObj; });
+    return !!(d && d.hr_approved === true);
+  }
+  window.isDriverVerifiedByHR = isDriverVerifiedByHR;
+
+  function verificationBadgeHtml(isVerified) {
+    return isVerified
+      ? '<span style="color:#4caf50;font-weight:600;font-size:12px;margin-inline-start:6px;">✅ موثَّق</span>'
+      : '<span style="color:#e05a5a;font-weight:600;font-size:12px;margin-inline-start:6px;">⚠️ غير موثَّق</span>';
+  }
+  window.verificationBadgeHtml = verificationBadgeHtml;
+
   function findLatestDocForField(plate, fieldLabel) {
     if (!plate || !fieldLabel) return null;
     var match = FIELD_TO_DOC_TYPE.find(function (m) { return fieldLabel.indexOf(m.kw) !== -1; });
@@ -5213,8 +5238,11 @@ return ctor.prototype=parent.prototype,child.prototype=new ctor,child.__super__=
     }
 
     html += '<div class="vehicle-detail-grid">' + fields.map(function (f) {
+      if (f[0] === 'رقم اللوحة' && f[1]) {
+        return '<div class="vd-field"><div class="k">' + escapeHtml(f[0]) + '</div><div class="v">' + escapeHtml(f[1]) + verificationBadgeHtml(isVehicleVerifiedByTam(f[1])) + '</div></div>';
+      }
       if (f[0] === 'السائق' && f[1] && APP.DRIVERS.some(function (d) { return d.name === f[1]; })) {
-        return '<div class="vd-field"><div class="k">' + escapeHtml(f[0]) + '</div><div class="v"><a href="#" class="vd-driver-link" data-driver="' + escapeHtml(f[1]) + '" style="color:var(--gold2);text-decoration:underline;">👁️ ' + escapeHtml(f[1]) + '</a></div></div>';
+        return '<div class="vd-field"><div class="k">' + escapeHtml(f[0]) + '</div><div class="v"><a href="#" class="vd-driver-link" data-driver="' + escapeHtml(f[1]) + '" style="color:var(--gold2);text-decoration:underline;">👁️ ' + escapeHtml(f[1]) + '</a>' + verificationBadgeHtml(isDriverVerifiedByHR(f[1])) + '</div></div>';
       }
       // 🔗 ربط تفاعلي بالمستند المصدر (Document Traceability) — بحث فعلي فى أنظمة إدارة المستندات (M-Files،
       // مبدأ ALCOA: "Original = يمكنك تحديد السجل المصدر") أكَّد أن هذا معيار أساسي، لا رفاهية. نعيد استخدام
