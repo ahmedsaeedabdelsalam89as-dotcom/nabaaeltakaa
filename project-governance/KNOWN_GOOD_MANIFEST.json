@@ -1,11 +1,11 @@
 {
   "schema": 1,
   "project": "Naba Fleet System",
-  "createdAt": "2026-09-11T19:25:40.843Z",
+  "createdAt": "2026-09-11T22:18:37.889Z",
   "files": {
     "src/index.html": {
-      "sha256": "a0e35954ba8d9f74078b0a82f037d5156f95d5c0316f8fcecdcc545b56ed9d11",
-      "size": 5808307
+      "sha256": "03e459f1f6972477ba77e805774579f3bfbe4612cd029847b07753525235ab24",
+      "size": 5810547
     },
     "PROJECT_RULES.md": {
       "sha256": "bd684a72b5f7e636dc2fd13cddeeca08467de287414478539c25983c58119390",

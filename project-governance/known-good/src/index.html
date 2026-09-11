@@ -4425,8 +4425,19 @@ return ctor.prototype=parent.prototype,child.prototype=new ctor,child.__super__=
 
     dataUrlPromise.then(function (dataUrl) {
       if (!dataUrl) throw new Error('تعذَّر قراءة الملف');
-      var record = {
-        id: 'doc' + Date.now() + '_' + (APP.DOCUMENTS_LIBRARY || []).length,
+      var docId = 'doc' + Date.now() + '_' + (APP.DOCUMENTS_LIBRARY || []).length;
+      // 🐛 إصلاح باج معماري حرج: كان يُخزَّن الملف كاملًا (dataUrl) داخل حالة التطبيق المحفوظة فى
+      // localStorage (سقفها 5-10 ميجابايت فقط فى أغلب المتصفحات) — بينما البرنامج عنده أصلًا مخزن أكبر
+      // بكثير (IndexedDB عبر Dexie، مُستخدَم فقط فى مسار "الاستيراد الذكي" الجديد). هذا كان السبب الحقيقي
+      // وراء "QuotaExceededError" عند رفع صور كثيرة. الحل: الصورة الكاملة تُخزَّن فى IndexedDB (بلا حد
+      // عملي)، وصورة مصغَّرة فقط (لا تتجاوز عادة عشرات الكيلوبايتات) تبقى فى localStorage للعرض السريع.
+      var vaultPromise = isImage ? nabaDocVaultPut(docId, 'original', dataUrl, '') : Promise.resolve(null);
+      var thumbPromise = isImage ? compressImageDataUrl(dataUrl, 520, 0.72) : Promise.resolve(dataUrl);
+      return Promise.all([vaultPromise, thumbPromise]).then(function (results) {
+        var vaultOk = results[0] !== null && isImage;
+        var thumb = results[1];
+        var record = {
+        id: docId,
         name: finalName,
         original_name: file.name,
         folder: folder,
@@ -4435,10 +4446,11 @@ return ctor.prototype=parent.prototype,child.prototype=new ctor,child.__super__=
         plate: linkedPlate,
         mime_type: file.type || '',
         ext: ext,
-        data_url: dataUrl,
+        data_url: thumb,
         size_bytes: file.size,
         verification_status: verificationStatus,
-        added_at: nowIso()
+        added_at: nowIso(),
+        vault: vaultOk ? { original: true, backend: 'IndexedDB/Dexie' } : null
       };
       APP.DOCUMENTS_LIBRARY.unshift(record);
       var vinfoRecord = registerVerifiedInformation({status:verificationStatus,source_name:finalName,source_type:(record.doc_type||'document'),entity_type:linkedPlate?'vehicle':'document',entity_key:linkedPlate||record.id,evidence_document_id:record.id,project:''});
@@ -4450,6 +4462,7 @@ return ctor.prototype=parent.prototype,child.prototype=new ctor,child.__super__=
       showToast('✅ تم حفظ المستند فى "المستندات"' + (linkedPlate ? (' وربطه بالمركبة ' + linkedPlate) : '') + ' بنجاح');
       if ($('#page-documents') && $('#page-documents').classList.contains('active')) renderDocumentsPage();
       if ($('#page-vehicleDetail') && $('#page-vehicleDetail').classList.contains('active') && linkedPlate && CURRENT_VEHICLE_DETAIL_PLATE === linkedPlate) renderVehicleDetail(linkedPlate);
+      });
     }).catch(function (err) {
       console.error(err);
       showToast('تعذَّر حفظ المستند: ' + (err && err.message ? err.message : String(err)));
@@ -4487,12 +4500,17 @@ return ctor.prototype=parent.prototype,child.prototype=new ctor,child.__super__=
   function downloadDocumentLibraryItem(id) {
     var rec = (APP.DOCUMENTS_LIBRARY || []).find(function (d) { return d.id === id; });
     if (!rec) return;
-    var a = document.createElement('a');
-    a.href = rec.data_url;
-    a.download = rec.name || 'مستند';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
+    // لو المستند له نسخة أصلية كاملة الجودة فى مخزن IndexedDB (الحالة الطبيعية بعد الإصلاح)، نحمّلها بدل
+    // الصورة المصغَّرة المخزَّنة محليًا للعرض السريع فقط.
+    var sourcePromise = (rec.vault && rec.vault.original) ? nabaDocVaultGet(rec.id, 'original') : Promise.resolve(rec.data_url);
+    sourcePromise.then(function (src) {
+      var a = document.createElement('a');
+      a.href = src || rec.data_url;
+      a.download = rec.name || 'مستند';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    });
   }
   window.downloadDocumentLibraryItem = downloadDocumentLibraryItem;
 
@@ -4503,7 +4521,14 @@ return ctor.prototype=parent.prototype,child.prototype=new ctor,child.__super__=
     var isImage = /^image\//.test(rec.mime_type || '') || /^(jpg|jpeg|png|bmp|webp|gif)$/.test(rec.ext || '');
     var isPdf = rec.ext === 'pdf' || /pdf/.test(rec.mime_type || '');
     if (isImage) {
-      box.innerHTML = '<img src="' + rec.data_url + '" data-naba-style="max-width:100%;max-height:60vh;border-radius:8px;border:1px solid var(--line);">';
+      // نعرض الصورة المصغَّرة فورًا (سريعة)، ثم نستبدلها بالنسخة الأصلية الكاملة الجودة من IndexedDB بمجرد جاهزيتها
+      box.innerHTML = '<img id="docPreviewImg" src="' + rec.data_url + '" data-naba-style="max-width:100%;max-height:60vh;border-radius:8px;border:1px solid var(--line);">';
+      if (rec.vault && rec.vault.original) {
+        nabaDocVaultGet(rec.id, 'original').then(function (fullSrc) {
+          var img = $('#docPreviewImg');
+          if (img && fullSrc) img.src = fullSrc;
+        });
+      }
     } else if (isPdf) {
       box.innerHTML = '<div class="small-note">جارٍ تجهيز معاينة PDF محليًا...</div><canvas id="docPdfPreviewCanvas" data-naba-style="max-width:100%;border:1px solid var(--line);border-radius:8px;"></canvas>';
       try {
