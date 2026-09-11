@@ -1,0 +1,7 @@
+<!doctype html><html><body><script>
+window.NABA_WINDOWS_SYNC={
+ start:async()=>({ok:true,token:'0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',url:'http://192.168.1.50:18765',server:{autoDiscovery:true,port:18765}}),
+ status:async()=>({running:true,port:18765,records:0})
+};
+</script><script src="../src/modules/naba-sync-center.js"></script>
+<script>setTimeout(async()=>{document.querySelector('[data-a="open"]').click();await new Promise(r=>setTimeout(r,80));document.body.dataset.testStatus=document.querySelector('[data-v="status"]').textContent;document.body.dataset.testUrl=document.querySelector('[data-v="url"]').textContent;document.body.dataset.testDiscovery=document.querySelector('[data-v="discovery"]').textContent;},80);</script></body></html>

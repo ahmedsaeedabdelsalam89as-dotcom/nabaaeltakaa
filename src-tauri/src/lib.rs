@@ -1,3 +1,4 @@
+mod naba_peer;
 // أُضيفت 2026-08-21 (بند 47/49) — التتبع اللحظي عبر Sactracking.com.
 // المشكلة المكتشفة فعليًا على جهاز المستخدم: عند الاتصال بـ app.sactracking.com مباشرة من
 // JavaScript داخل نافذة الويب (fetch)، يرفض متصفح Chromium/Edge الطلب برسالة CORS واضحة
@@ -129,7 +130,7 @@ async fn gmail_api_request(method: String, path: String, access_token: String, b
 }
 
 
-const SECURE_SECRET_NAMES: &[&str] = &["tracking_token", "phone_bridge_secret", "firebase_auth", "firebase_password", "whatsapp_token"];
+const SECURE_SECRET_NAMES: &[&str] = &["tracking_token", "phone_bridge_secret", "firebase_auth", "firebase_password", "whatsapp_token", "lan_pair_token"];
 
 fn validate_secure_secret_name(name: &str) -> Result<&str, String> {
     let n = name.trim();
@@ -272,7 +273,7 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_process::init())
-        .invoke_handler(tauri::generate_handler![tracking_api_get, phone_bridge_post, gmail_api_request, secure_secret_set, secure_secret_get, secure_secret_delete, certification_mode, certification_write_report])
+        .invoke_handler(tauri::generate_handler![tracking_api_get, phone_bridge_post, gmail_api_request, secure_secret_set, secure_secret_get, secure_secret_delete, certification_mode, certification_write_report, naba_peer::naba_peer_start, naba_peer::naba_peer_stop, naba_peer::naba_peer_status, naba_peer::naba_peer_snapshot, naba_peer::naba_peer_local_ip])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

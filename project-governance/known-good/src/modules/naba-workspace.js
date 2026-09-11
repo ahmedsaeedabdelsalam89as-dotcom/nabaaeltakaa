@@ -1,5 +1,5 @@
 (function(){'use strict';
-  var VERSION='1.9.0', state={items:[],selected:0};
+  var VERSION='1.13.13-csp-audit', state={items:[],selected:0};
   function q(s,r){return (r||document).querySelector(s)}
   function qa(s,r){return Array.prototype.slice.call((r||document).querySelectorAll(s))}
   function txt(v){return String(v==null?'':v).trim()}
@@ -24,11 +24,11 @@
   function kindLabel(k){return k==='vehicle'?'مركبة':k==='driver'?'سائق':'وحدة'}
   function activateItem(x){if(!x)return;if(x.kind==='page'){if(typeof window.showPage==='function')window.showPage(x.key);closePalette();return}showContext(x);closePalette();}
   function contextPairs(o){var preferred=['plate','type','vehicle_type','project','driver','name','phone','mobile','status','chassis','serial','model','make'];var seen={},out=[];preferred.forEach(function(k){if(o&&o[k]!=null&&txt(o[k])){seen[k]=1;out.push([k,o[k]])}});Object.keys(o||{}).forEach(function(k){if(out.length>=12||seen[k])return;var v=o[k];if(['string','number','boolean'].indexOf(typeof v)>=0&&txt(v))out.push([k,v])});return out}
-  function showContext(x){var panel=q('#nabaContextPanel'),body=q('#nabaContextBody');if(!panel||!body)return;var raw=safeObject(x.raw),pairs=contextPairs(raw),html='<h3 style="margin-top:0">'+x.icon+' '+escapeHtml(x.label)+'</h3><div class="small-note">'+escapeHtml(x.sub||kindLabel(x.kind))+'</div><div class="naba-context-grid" style="margin-top:12px">'+pairs.map(function(kv){return '<div class="naba-context-kv"><small>'+escapeHtml(kv[0])+'</small><b>'+escapeHtml(kv[1])+'</b></div>';}).join('')+'</div>';
-    if(x.kind==='vehicle'&&window.NabaFleetAI&&typeof window.NabaFleetAI.vehicle360==='function'){try{var v360=window.NabaFleetAI.vehicle360(x.key);if(v360){var conf=v360.dataConfidence&&v360.dataConfidence.score;html+='<div class="card" style="margin-top:12px"><b>Vehicle 360</b><div class="small-note" style="margin-top:5px">ثقة البيانات: '+escapeHtml(conf==null?'—':conf+'%')+'</div></div>';}}catch(_){}}
-    html+='<div class="naba-context-actions">';if(x.kind==='vehicle')html+='<button class="btn primary" data-open-page="vehicles">فتح المركبات</button>';if(x.kind==='driver')html+='<button class="btn primary" data-open-page="drivers">فتح السائقين</button>';html+='<button class="btn secondary" data-context-ask>اسأل NABA عن هذا</button></div>';body.innerHTML=html;qa('[data-open-page]',body).forEach(function(b){b.addEventListener('click',function(){if(window.showPage)window.showPage(b.dataset.openPage)})});var ask=q('[data-context-ask]',body);if(ask)ask.addEventListener('click',function(){openPalette('حلل '+x.label+' وأعطني الأولويات والمخاطر القابلة للتنفيذ')});panel.classList.add('open');panel.setAttribute('aria-hidden','false')}
+  function showContext(x){var panel=q('#nabaContextPanel'),body=q('#nabaContextBody');if(!panel||!body)return;var raw=safeObject(x.raw),pairs=contextPairs(raw),html='<h3 class="naba-context-title">'+x.icon+' '+escapeHtml(x.label)+'</h3><div class="small-note">'+escapeHtml(x.sub||kindLabel(x.kind))+'</div><div class="naba-context-grid naba-context-grid-spaced">'+pairs.map(function(kv){return '<div class="naba-context-kv"><small>'+escapeHtml(kv[0])+'</small><b>'+escapeHtml(kv[1])+'</b></div>';}).join('')+'</div>';
+    if(x.kind==='vehicle'&&window.NabaFleetAI&&typeof window.NabaFleetAI.vehicle360==='function'){try{var v360=window.NabaFleetAI.vehicle360(x.key);if(v360){var conf=v360.dataConfidence&&v360.dataConfidence.score;html+='<div class="card naba-context-card-spaced"><b>Vehicle 360</b><div class="small-note naba-context-confidence">ثقة البيانات: '+escapeHtml(conf==null?'—':conf+'%')+'</div></div>';}}catch(_){}}
+    html+='<div class="naba-context-actions">';if(x.kind==='vehicle')html+='<button type="button" class="btn primary" data-open-page="vehicles">فتح المركبات</button>';if(x.kind==='driver')html+='<button type="button" class="btn primary" data-open-page="drivers">فتح السائقين</button>';html+='<button type="button" class="btn secondary" data-context-ask>اسأل NABA عن هذا</button></div>';body.innerHTML=html;qa('[data-open-page]',body).forEach(function(b){b.addEventListener('click',function(){if(window.showPage)window.showPage(b.dataset.openPage)})});var ask=q('[data-context-ask]',body);if(ask)ask.addEventListener('click',function(){openPalette('حلل '+x.label+' وأعطني الأولويات والمخاطر القابلة للتنفيذ')});panel.classList.add('open');panel.setAttribute('aria-hidden','false')}
   function closeContext(){var p=q('#nabaContextPanel');if(p){p.classList.remove('open');p.setAttribute('aria-hidden','true')}}
-  async function askNaba(problem){var box=q('#nabaPaletteResults');if(!box)return;box.innerHTML='<div class="naba-action-empty">🧠 تحليل محلي منظم...</div>';try{var r=await window.NabaFleetAI.hybridSolve(problem,{mode:'smart'});box.innerHTML='<div class="card"><b>نتيجة NABA</b><pre style="white-space:pre-wrap;max-height:45vh;overflow:auto">'+escapeHtml(compactResult(r))+'</pre></div>';}catch(e){box.innerHTML='<div class="naba-action-empty">تعذر التحليل: '+escapeHtml(e&&e.message||e)+'</div>'}}
+  async function askNaba(problem){var box=q('#nabaPaletteResults');if(!box)return;box.innerHTML='<div class="naba-action-empty">🧠 تحليل محلي منظم...</div>';try{var r=await window.NabaFleetAI.hybridSolve(problem,{mode:'smart'});box.innerHTML='<div class="card"><b>نتيجة NABA</b><pre class="naba-ai-result-pre">'+escapeHtml(compactResult(r))+'</pre></div>';}catch(e){box.innerHTML='<div class="naba-action-empty">تعذر التحليل: '+escapeHtml(e&&e.message||e)+'</div>'}}
   function compactResult(r){if(!r)return 'لا توجد نتيجة';var core=r.result||r;var exec=core.executive||core.result&&core.result.executive;if(exec){var lines=[];if(exec.recommended)lines.push('التوصية: '+(exec.recommended.action||exec.recommended));if(exec.confidence!=null)lines.push('الثقة: '+Math.round(exec.confidence*100)+'%');if(exec.alternatives&&exec.alternatives.length)lines.push('بدائل: '+exec.alternatives.slice(0,3).map(function(a){return a.action||a}).join(' | '));return lines.join('\n')}try{return JSON.stringify(r,null,2).slice(0,6000)}catch(_){return txt(r)}}
   function alerts(){try{return typeof window.computeSystemAlerts==='function'?(window.computeSystemAlerts()||[]):[]}catch(_){return []}}
   function tasks(){var a=getApp().TASKS||[];return a.filter(function(t){var s=norm(t.status);return !/done|closed|مكتمل|منته/.test(s)}).map(function(t){return {severity:(/عاجل|حرج|high/.test(norm(t.priority||t.severity))?'high':'medium'),title:t.title||t.task||t.subject||'مهمة',meta:t.due||t.due_date||t.owner||''}})}
@@ -37,4 +37,49 @@
   function init(){var toggle=q('#workspaceLegacyToggle'),sidebar=q('#sidebar');if(toggle&&sidebar)toggle.addEventListener('click',function(){sidebar.classList.toggle('show-legacy-nav')});var btn=q('#nabaCommandPaletteBtn');if(btn)btn.addEventListener('click',function(){openPalette('')});qa('[data-naba-close]').forEach(function(x){x.addEventListener('click',closePalette)});var inp=q('#nabaPaletteInput');if(inp){inp.addEventListener('input',function(){renderPalette(inp.value)});inp.addEventListener('keydown',function(e){var max=state.items.length-1;if(e.key==='ArrowDown'&&max>=0){e.preventDefault();state.selected=Math.min(max,state.selected+1);markSelected()}else if(e.key==='ArrowUp'&&max>=0){e.preventDefault();state.selected=Math.max(0,state.selected-1);markSelected()}else if(e.key==='Enter'&&state.items[state.selected]){e.preventDefault();activateItem(state.items[state.selected])}})}document.addEventListener('keydown',function(e){if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='k'){e.preventDefault();openPalette('')}else if(e.key==='Escape'){closePalette();closeContext()}});var close=q('#nabaContextClose');if(close)close.addEventListener('click',closeContext);var gs=q('#globalSearch');if(gs){gs.addEventListener('keydown',function(e){if(e.key==='Enter'&&txt(gs.value)){e.preventDefault();openPalette(gs.value)}})}renderActionCenter();syncGroupActive();var obs=new MutationObserver(syncGroupActive);qa('nav.sidebar button[data-page]').forEach(function(b){obs.observe(b,{attributes:true,attributeFilter:['class']})});window.NabaWorkspace={version:VERSION,open:openPalette,renderActionCenter:renderActionCenter,showContext:showContext};}
   function markSelected(){qa('[data-palette-i]').forEach(function(b){b.classList.toggle('selected',Number(b.dataset.paletteI)===state.selected);if(Number(b.dataset.paletteI)===state.selected)b.scrollIntoView({block:'nearest'})})}
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
+})();
+
+/* NABA UOM + Workflow additive layer — 2026-09-10 — READ ONLY over operational stores */
+(function(){'use strict';
+  var VERSION='1.10.4+uom.1', CACHE_KEY='NABA_UOM_DECISION_CACHE_V1', WF_KEY='NABA_UOM_WORKFLOWS_V1';
+  function obj(v){return v&&typeof v==='object'?v:{}}
+  function arr(v){return Array.isArray(v)?v:[]}
+  function txt(v){return String(v==null?'':v).trim()}
+  function norm(v){return txt(v).toLowerCase().replace(/[أإآ]/g,'ا').replace(/ة/g,'ه').replace(/ى/g,'ي').replace(/[\s\-_\/]+/g,'')}
+  function app(){return obj(window.APP)}
+  function call(name){try{return typeof window[name]==='function'?window[name]():null}catch(_){return null}}
+  function rows(type){var A=app(),r;
+    if(type==='vehicle')return arr(A.FLEET);
+    if(type==='driver')return arr(A.DRIVERS);
+    if(type==='approved_driver')return arr(A.DRIVERS).filter(function(d){return d&&d.hr_approved===true});
+    if(type==='document')return arr(A.DOCUMENTS_LIBRARY||A.VEHICLE_DOCUMENTS||A.DOCUMENTS);
+    if(type==='maintenance'){r=call('computeMaintenanceTracking');return arr(r&&r.rows||r||A.MAINTENANCE)}
+    if(type==='fuel'){r=call('computeFuelIntelligence');return arr(r&&r.rows||r||A.FUEL)}
+    if(type==='workflow'){try{return arr(JSON.parse(localStorage.getItem(WF_KEY)||'[]'))}catch(_){return []}}
+    return [];
+  }
+  var schemas={
+    vehicle:{label:'مركبة',source:'APP.FLEET',key:'plate',mutable:false},
+    driver:{label:'سائق',source:'APP.DRIVERS',key:'name',mutable:false},
+    approved_driver:{label:'سائق معتمد',source:'APP.DRIVERS[hr_approved=true]',key:'name',mutable:false},
+    document:{label:'مستند مركبة',source:'documents store',key:'id',mutable:false},
+    maintenance:{label:'صيانة',source:'maintenance engine',key:'plate',mutable:false},
+    fuel:{label:'وقود',source:'fuel intelligence',key:'plate',mutable:false},
+    workflow:{label:'سير عمل',source:WF_KEY,key:'id',mutable:false}
+  };
+  function schemaList(){return Object.keys(schemas).map(function(k){return Object.assign({type:k},schemas[k])})}
+  function keyOf(type,x){var k=(schemas[type]&&schemas[type].key)||'id';return txt(x&&x[k]||x&&x.id||x&&x.plate||x&&x.name)}
+  function get(type,id){var n=norm(id),r=rows(type).find(function(x){return norm(keyOf(type,x))===n});return r||null}
+  function query(type,filter,limit){var out=rows(type),f=obj(filter);Object.keys(f).forEach(function(k){out=out.filter(function(x){return norm(x&&x[k]).indexOf(norm(f[k]))>=0})});return out.slice(0,Math.max(1,Math.min(Number(limit)||100,500)))}
+  function byPlate(list,plate){var n=norm(plate);return arr(list).filter(function(x){return norm(x&&(x.plate||x.plate_no||x.vehicle_plate))===n})}
+  function relations(type,id){if(type!=='vehicle')return {};var v=get('vehicle',id);if(!v)return {};var plate=keyOf('vehicle',v),driverName=txt(v.driver||v.driver_name);return {vehicle:v,driver:driverName?get('driver',driverName):null,driverApproved:driverName?!!get('approved_driver',driverName):false,documents:byPlate(rows('document'),plate),maintenance:byPlate(rows('maintenance'),plate),fuel:byPlate(rows('fuel'),plate)}}
+  function loadWorkflows(){return rows('workflow')}
+  function saveWorkflows(x){try{localStorage.setItem(WF_KEY,JSON.stringify(arr(x).slice(-300)));return {ok:true}}catch(e){var msg='NABA_WORKFLOW_STORAGE_WRITE_FAILED:'+String(e&&e.message||e);try{console.error(msg,e)}catch(_){}return {ok:false,error:msg}}}
+  function createWorkflow(type,input){var all=loadWorkflows(),wf={id:'wf_'+Date.now()+'_'+Math.random().toString(36).slice(2,8),type:txt(type)||'generic',input:obj(input),status:'queued',createdAt:new Date().toISOString(),updatedAt:new Date().toISOString(),source:'naba-uom'};all.push(wf);var persisted=saveWorkflows(all);if(!persisted.ok)return {ok:false,error:persisted.error,workflow:null};return {ok:true,workflow:wf}}
+  function workflowStatus(id){var w=loadWorkflows().find(function(x){return x.id===id});return w?{ok:true,workflow:w}:{ok:false,error:'Workflow غير موجود'}}
+  function refreshWorkflows(){var a=loadWorkflows();return {ok:true,total:a.length,recent:a.slice(-20).reverse()}}
+  function safeOperationalDecisions(force){var now=Date.now(),ttl=60000,c=null;try{c=JSON.parse(sessionStorage.getItem(CACHE_KEY)||'null')}catch(_){}if(!force&&c&&now-c.at<ttl)return c.value;var fn=window.computeOperationalDecisionEngine||window.computeFleetDecisions||window.computeSystemAlerts;if(typeof fn!=='function')return null;try{var value=fn();try{sessionStorage.setItem(CACHE_KEY,JSON.stringify({at:now,value:value}))}catch(_){}return value}catch(_){return c&&c.value||null}}
+  function health(){var A=app(),checks=[['APP',!!window.APP],['FLEET',Array.isArray(A.FLEET)],['DRIVERS',Array.isArray(A.DRIVERS)],['workspace',!!window.NabaWorkspace]];return {ok:checks.every(function(x){return x[1]}),version:VERSION,checks:checks.map(function(x){return {name:x[0],ok:x[1]}}),counts:{vehicles:arr(A.FLEET).length,drivers:arr(A.DRIVERS).length,approvedDrivers:arr(A.DRIVERS).filter(function(d){return d&&d.hr_approved===true}).length},at:new Date().toISOString()}}
+  function install(){var ai=window.NabaFleetAI=window.NabaFleetAI||{};if(!ai.objectSchemas)ai.objectSchemas=schemaList;if(!ai.objectGet)ai.objectGet=get;if(!ai.objectQuery)ai.objectQuery=query;if(!ai.objectRelations)ai.objectRelations=relations;if(!ai.objectModelVersion)ai.objectModelVersion=VERSION;if(!ai.createWorkflow)ai.createWorkflow=createWorkflow;if(!ai.workflowStatus)ai.workflowStatus=workflowStatus;if(!ai.refreshWorkflows)ai.refreshWorkflows=refreshWorkflows;if(!ai.safeOperationalDecisions)ai.safeOperationalDecisions=safeOperationalDecisions;if(!ai.uomHealthCheck)ai.uomHealthCheck=health;window.NabaUOMWorkflow={version:VERSION,schemas:schemaList,get:get,query:query,relations:relations,createWorkflow:createWorkflow,workflowStatus:workflowStatus,refreshWorkflows:refreshWorkflows,healthCheck:health};}
+  install();
 })();

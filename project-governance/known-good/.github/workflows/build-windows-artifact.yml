@@ -22,10 +22,10 @@ jobs:
       - name: Guardian integrity verify
         run: node scripts/naba-code-guardian.mjs --verify
       - name: Cargo check
-        run: cargo check --manifest-path src-tauri/Cargo.toml
+        run: cargo check --manifest-path src-tauri/Cargo.toml --locked
       - name: Build unsigned NSIS installer artifact
-        shell: bash
-        run: npm run tauri build -- --config '{"bundle":{"createUpdaterArtifacts":false}}'
+        shell: pwsh
+        run: npm run tauri build -- --config src-tauri/tauri.no-updater.conf.json
       - name: Upload installer
         uses: actions/upload-artifact@v4
         with:

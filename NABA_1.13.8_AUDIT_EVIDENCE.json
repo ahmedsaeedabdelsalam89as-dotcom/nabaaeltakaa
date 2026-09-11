@@ -1,0 +1,13 @@
+{
+  "candidate": "NABA_Fleet_RC_1.13.8_FULL_SOURCE_CONTROL_AUDIT_2026-09-11",
+  "html_sha256": "60211d7ba084c4e609924710caa8832727ad7c5fc26eb852973a41db4e5740a9",
+  "data_bundle_sha256": "b9171a8aeefb22378ddc67a4c91caadd2b4d016da5cf43e21ab7846bf0271867",
+  "fleet": 85,
+  "drivers": 43,
+  "fleet_archive": 20,
+  "duplicate_active_plates": 0,
+  "static_buttons": 238,
+  "buttons_without_type_button": 0,
+  "release_pass": false,
+  "status": "STATIC_PASS; BUILD/SIGN/PACKAGE/RUNTIME/DEVICE UNVERIFIED"
+}

@@ -91,3 +91,58 @@ Known-Good Manifest + hashes للكود الثابت فقط؛ Ledger/نتائج 
 - Root cause: project charts depended only on `APP.PROJECTS` / weekly-plan aggregation.
 - Fix: unified project vehicle map uses approved project data first and falls back to each fleet vehicle's worksite/project fields, with plate deduplication. Utilization remains unknown unless real weekly status exists.
 - Regression: `dashboard-project-fallback-smoke.mjs`.
+
+### ERR-046 — Startup could abort before navigation/integrity completion
+- Date: 2026-09-08
+- Type: Runtime/UX
+- Symptom: UI rendered but remained at “جارِ الفحص…” and controls could appear non-responsive.
+- Root cause: monolithic `init()` allowed any setup/render exception to abort all later initialization.
+- Fix: fault-isolated startup steps, independent major-page renders, persistent startup error capture, and safe-mode status fallback.
+- Regression: `startup-fault-isolation-smoke.mjs`.
+
+## 2026-09-08 — Windows 1.11.2 Sync Center
+- Change: external Sync Center UI over existing NABA_WINDOWS_SYNC; core peer protocol unchanged.
+- Gate failure: version identity drift (Cargo.toml/Cargo.lock/preflight/workspace expected 1.11.1).
+- Root cause: version bump did not cover all identity gates.
+- Fix: targeted 1.11.2 update in version-bearing files only.
+- Regression: npm run test:all PASS.
+- UI runtime: Playwright + Chromium with mocked Tauri API PASS (panel/status/url/discovery/token masking).
+- Non-product test attempt: direct Chromium file dump hung because existing sync module owns a repeating interval; abandoned without changing working runtime code.
+- Physical Windows build/runtime remains untested in this Linux environment because Rust/Cargo is unavailable.
+
+## 2026-09-11 — ERR-012 Unified Sync module regression in 1.13.x HTML branch
+- Discovery: verified Windows 1.11.2 source referenced six local modules, including unified sync, peer protocol, schema gate, Windows sync and sync center; 1.13.7 HTML referenced only `naba-workspace.js`.
+- Risk: Windows/Android/LAN sync UI and native bridge paths could disappear despite existing verified implementation.
+- Candidate fix: 1.13.9 source candidate restores the five verified sync module references and preserves the native peer/secure-pair Rust commands from the verified Windows source.
+- Verification: `unified-sync-smoke.mjs` PASS; `windows-dnssd-smoke.mjs` PASS; source syntax PASS.
+- Runtime/device status: UNVERIFIED until Windows/Tauri and Android target tests.
+
+## 2026-09-11 — ERR-013 CSP incompatibility inside external workspace/sync assets
+- Discovery: `naba-workspace.js` generated five inline `style=` attributes; `naba-sync-center.js` dynamically injected a `<style>` block. These paths were outside the HTML CSP migration and could be blocked by a strict Tauri CSP.
+- Candidate fix: moved dynamic workspace/sync presentation rules to local `naba-workspace.css`; all generated sync/workspace buttons now use `type="button"`; no string event attributes introduced.
+- Verification: workspace module `style=` count 0; sync center injected `<style>` count 0; Node syntax PASS; workspace smoke PASS; control-integrity 1.13.9 PASS.
+- Runtime status: UNVERIFIED until target WebView test.
+
+## 2026-09-11 — 1.13.9 candidate version consistency
+- Corrected visible header drift (1.13.0 shown inside later candidates).
+- Candidate version-bearing files aligned to 1.13.9 without dependency/SDK downgrade.
+- Data-bundle SHA-256 remains `b9171a8aeefb22378ddc67a4c91caadd2b4d016da5cf43e21ab7846bf0271867`.
+- RELEASE_PASS: NO.
+
+## 2026-09-11 — RC 1.13.10 Runtime Truth Hardening
+- ERR-013: Aggregator engines `computeDriverIntelligence()` and `computeFuelOptimization()` swallowed upstream exceptions and could present empty/normal-looking results. Fixed to return `degraded:true`, sanitized `reason`, record/clear `window.NABA_ENGINE_ERRORS`, and expose engine runtime errors in Health Check/UI.
+- ERR-014: `computePredictiveFailureEngine()` recalculated `computeFuelIntelligence()` once per vehicle and swallowed failures, risking avoidable O(N×fuel-scan) work and silently undercounted risk when fuel analysis failed. Fixed to calculate fuel intelligence once per predictive run, map flagged vehicles once, and propagate degraded status.
+- New deterministic `test:truth` validates failure visibility, recovery clearing, fuel high-score mapping, predictive single-pass fuel calculation, and degraded propagation.
+- Browser runtime attempt in this environment was blocked by administrator policy before navigation; no application runtime PASS/FAIL was recorded from that attempt.
+
+
+## 2026-09-11 — RC 1.13.11 Certification Integrity + Trial Gate
+- اكتُشف Drift حقيقي في دليل Runtime: تقرير self-test وشاشة تحديثات النظام كانا ما يزالان يحملان 1.10.3 رغم Candidate 1.13.10.
+- أصلح الإصدار ليصبح مصدر الحقيقة 1.13.11 عبر package/lock/Cargo/Tauri/version/UI/runtime report.
+- Windows certification أصبح يرفض أي runtime-self-test.json لا يطابق version المتوقع من package.json.
+- BUILD_WINDOWS أصبح fail-closed ويبدأ `cargo check --locked` ولا يعيد كتابة Cargo.lock أو Guardian snapshot أثناء الشهادة.
+- أضيف Trial Data Integrity gate: saveState rollback، Restore rollback/success، Smart Import save/link/update، وعدم إغلاق Pending عند فشل persistence.
+- أضيف Deep Security workflow: CodeQL security-extended لـ JavaScript/TypeScript + Rust، npm audit، cargo-audit/RustSec، locked cargo check. لم يُنفّذ CodeQL/cargo-audit داخل هذه البيئة؛ workflow جاهز عند رفع exact source إلى GitHub.
+- Guardian baseline رُفع إلى 57 ملفًا حرجًا ويشمل القواعد، وحدات sync، فحوص 1.13.9/1.13.10/1.13.11، workflow الأمني، وTrial wrapper.
+- Node syntax: 29 ملف JS/MJS = PASS. npm/Cargo dependency graphs لم تتغير عن 1.13.10 إلا رقم إصدار المشروع.
+- Runtime/Build/Sign على Windows لنفس hash ما زال مطلوبًا قبل أي RELEASE_PASS.

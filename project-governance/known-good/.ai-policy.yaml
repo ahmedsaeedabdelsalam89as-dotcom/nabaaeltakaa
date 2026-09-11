@@ -1,0 +1,89 @@
+project:
+  name: NABA Fleet
+  mode: strict
+priority:
+  - user_instruction
+  - project_rules
+  - security
+  - correctness
+  - compatibility
+  - maintainability
+  - performance
+  - convenience
+workflow:
+  required:
+    - discovery
+    - baseline_verification
+    - requirements_lock
+    - technology_validation
+    - minimal_patch_plan
+    - implementation
+    - unit_test
+    - integration_test
+    - build
+    - signing
+    - package_inspection
+    - runtime_test
+    - device_acceptance
+    - release_gate
+rules:
+  search_existing_files_before_requesting_upload: true
+  preserve_verified_features: true
+  minimal_diff_only: true
+  silent_fallback: false
+  silent_downgrade: false
+  obsolete_toolchain_for_convenience: false
+  claim_without_evidence: false
+android:
+  require_supported_toolchain: true
+  allow_target_sdk_downgrade: false
+  allow_compile_sdk_downgrade: false
+  allow_security_downgrade: false
+  allow_v1_only_signing_workaround: false
+  require_manifest_validation: true
+  require_runtime_permission_validation: true
+  require_package_inspection: true
+  require_real_device_acceptance: true
+release:
+  allowed_statuses: [IMPLEMENTED, STATIC_PASS, BUILD_PASS, SIGN_PASS, PACKAGE_PASS, RUNTIME_PASS, DEVICE_PASS, RELEASE_PASS]
+  final_requires: [BUILD_PASS, SIGN_PASS, PACKAGE_PASS, RUNTIME_PASS, DEVICE_PASS]
+  forbid_final_filename_without_release_pass: true
+failure_policy:
+  correct_solution_unavailable: { action: STOP }
+  environment_too_old: { action: UPGRADE_ENVIRONMENT }
+  dependency_conflict: { action: FIX_ROOT_CAUSE }
+  build_requires_security_downgrade: { action: BLOCK_RELEASE }
+
+# NABA Intelligence/Context extension — 2026-09-09
+intelligence:
+  resolve_intent_before_action: true
+  contradiction_scan: true
+  adaptive_effort: true
+  anti_loop_after_failure: true
+  preserve_verified_state: true
+
+context:
+  targeted_retrieval: true
+  prefer_symbol_or_range_reads: true
+  avoid_unchanged_context_repetition: true
+  stop_when_more_context_will_not_change_decision: true
+
+research:
+  current_sources_when_freshness_matters: true
+  official_primary_sources_first: true
+  independent_confirmation_for_material_fast_changing_claims: true
+  reconcile_source_conflicts: true
+  distinguish_fact_inference_unverified: true
+
+evidence:
+  wording_must_match_evidence_layer: true
+  static_is_not_runtime: true
+  runtime_is_not_device: true
+  current_artifact_evidence_required: true
+
+interaction:
+  natural_context_aware: true
+  no_canned_padding: true
+  no_repeat_user_context_when_retrievable: true
+  ask_only_when_missing_info_changes_implementation: true
+  never_pretend_human: true

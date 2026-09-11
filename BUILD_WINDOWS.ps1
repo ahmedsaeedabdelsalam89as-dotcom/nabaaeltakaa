@@ -1,4 +1,4 @@
-﻿$ErrorActionPreference = 'Stop'
+$ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent $MyInvocation.MyCommand.Path
 Set-Location $root
 Write-Host 'Naba Fleet System - Windows Production Build' -ForegroundColor Cyan
@@ -8,17 +8,11 @@ npm ci
 if ($LASTEXITCODE -ne 0) { throw "npm ci failed with exit code $LASTEXITCODE" }
 npm run test:all
 if ($LASTEXITCODE -ne 0) { throw "test:all failed with exit code $LASTEXITCODE" }
-# Normalize Cargo.lock on the actual Windows/Rust toolchain first.
-# This is intentional for certification bootstrap because Cargo can require
-# a lock refresh across toolchain/platform resolution even when Cargo.toml is unchanged.
-cargo check --manifest-path src-tauri/Cargo.toml
-if ($LASTEXITCODE -ne 0) { throw "cargo lock normalization/check failed with exit code $LASTEXITCODE" }
-node scripts/naba-code-guardian.mjs --snapshot
-if ($LASTEXITCODE -ne 0) { throw "Guardian snapshot after Cargo normalization failed with exit code $LASTEXITCODE" }
+# Certification is immutable/fail-closed: the tested source must not rewrite Cargo.lock.
 node scripts/naba-code-guardian.mjs --verify
-if ($LASTEXITCODE -ne 0) { throw "Guardian verify failed with exit code $LASTEXITCODE" }
+if ($LASTEXITCODE -ne 0) { throw "Guardian verify failed before Cargo check with exit code $LASTEXITCODE" }
 cargo check --manifest-path src-tauri/Cargo.toml --locked
-if ($LASTEXITCODE -ne 0) { throw "cargo locked re-check failed with exit code $LASTEXITCODE" }
+if ($LASTEXITCODE -ne 0) { throw "cargo check --locked failed; do not mutate Cargo.lock during certification (exit code $LASTEXITCODE)" }
 $hasKey = -not [string]::IsNullOrWhiteSpace($env:TAURI_SIGNING_PRIVATE_KEY)
 if ($hasKey) {
   Write-Host 'Signing key detected: building updater artifacts.' -ForegroundColor Green

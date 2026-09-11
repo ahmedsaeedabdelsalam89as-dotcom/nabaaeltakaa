@@ -1,7 +1,7 @@
 {
   "name": "fleet-desktop",
   "private": true,
-  "version": "1.10.4",
+  "version": "1.13.13",
   "type": "module",
   "scripts": {
     "tauri": "tauri",
@@ -15,12 +15,20 @@
     "test:guardian": "node scripts/guardian-regression-smoke.mjs",
     "test:android": "node scripts/android-static-smoke.mjs",
     "test:executive": "node scripts/executive-structure-smoke.mjs",
-    "test:all": "npm run preflight && npm run test:cognitive && npm run test:hybrid && npm run test:security && npm run test:workspace && npm run test:reliability && npm run test:reflection && npm run test:executive && npm run test:guardian && npm run test:guardian-self && npm run test:command-center && npm run test:android && npm run test:xss && npm run test:windows-gate && npm run test:dashboard",
+    "test:all": "npm run preflight && npm run test:cognitive && npm run test:hybrid && npm run test:security && npm run test:workspace && npm run test:reliability && npm run test:reflection && npm run test:executive && npm run test:guardian && npm run test:guardian-self && npm run test:command-center && npm run test:android && npm run test:xss && npm run test:windows-gate && npm run test:dashboard && npm run test:startup && npm run test:unified && npm run test:dnssd && npm run test:controls && npm run test:independent && npm run test:truth && npm run test:trial-data && npm run test:remote-exec",
     "test:guardian-self": "node scripts/guardian-selftest.mjs",
     "test:command-center": "node scripts/command-center-ui-smoke.mjs",
     "test:xss": "node scripts/xss-regression-smoke.mjs",
     "test:windows-gate": "node scripts/windows-build-gate-smoke.mjs",
-    "test:dashboard": "node scripts/dashboard-project-fallback-smoke.mjs"
+    "test:dashboard": "node scripts/dashboard-project-fallback-smoke.mjs",
+    "test:startup": "node scripts/startup-fault-isolation-smoke.mjs",
+    "test:unified": "node scripts/unified-sync-smoke.mjs",
+    "test:dnssd": "node scripts/windows-dnssd-smoke.mjs",
+    "test:controls": "node scripts/control-integrity-1138.mjs",
+    "test:independent": "node scripts/independent-assurance-1139.mjs",
+    "test:truth": "node scripts/runtime-truth-1140.mjs",
+    "test:trial-data": "node scripts/trial-data-integrity-1141.mjs",
+    "test:remote-exec": "node scripts/remote-exec-policy-1142.mjs"
   },
   "devDependencies": {
     "@tauri-apps/cli": "^2"

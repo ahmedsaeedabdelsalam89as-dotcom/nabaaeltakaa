@@ -1,0 +1,36 @@
+name: Deep Security Assurance
+on:
+  pull_request:
+  workflow_dispatch:
+  push:
+    branches: [main, master]
+permissions:
+  contents: read
+  security-events: write
+jobs:
+  codeql:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: github/codeql-action/init@v3
+        with:
+          languages: javascript-typescript,rust
+          queries: security-extended
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Install JS dependencies
+        run: npm ci
+      - name: NPM vulnerability audit
+        run: npm audit --omit=dev
+      - name: Full deterministic regression gate
+        run: npm run test:all
+      - name: Locked Rust compile check
+        run: cargo check --manifest-path src-tauri/Cargo.toml --locked
+      - name: RustSec audit
+        run: |
+          cargo install cargo-audit --locked
+          cargo audit --file src-tauri/Cargo.lock
+      - uses: github/codeql-action/analyze@v3
