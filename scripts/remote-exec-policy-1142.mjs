@@ -45,7 +45,7 @@ const expectedHosts = new Set(['https://cdn.jsdelivr.net','https://unpkg.com','h
 const unexpectedCspHosts = cspHosts.filter(h => !expectedHosts.has(h));
 
 const checks = {
-  version: conf.version === '1.13.16',
+  version: conf.version === '1.13.17',
   noDirectRemoteScriptTags: directRemoteScriptTags === 0,
   noJavascriptUrls: javascriptUrls === 0,
   remoteExecExactAllowlist: unexpected.length === 0,
@@ -54,14 +54,14 @@ const checks = {
   cspNoHttpExecutableHosts: !/\bhttp:\/\//.test(scriptSrc),
   cspExecutableHostsRestricted: unexpectedCspHosts.length === 0,
   dynamicLoaderCountExpected: scriptSrcAssignments === 2,
-  dynamicImportCountExpected: dynamicImportRemote === 1
+  dynamicImportCountExpected: dynamicImportRemote === 0
 };
 
 console.log('REMOTE_EXEC_POLICY_1142', JSON.stringify({
   checks,
   inventory: [...remoteJs].sort(),
   counts: { directRemoteScriptTags, javascriptUrls, dynamicImportRemote, scriptSrcAssignments },
-  residualRisk: 'Pinned remote executable code remains lazy-loaded. Production RELEASE_PASS should vendor executable dependencies locally or add cryptographic integrity verification.'
+  residualRisk: 'No remote dynamic-import executable code remains (WebLLM removed for security per Tauri official guidance). Script-tag CDN libraries (Dexie, FlexSearch, Leaflet, pdf-lib, Tesseract) remain pinned by exact version; vendoring locally or adding integrity verification is a lower-priority future hardening step.'
 }, null, 2));
 
 if (Object.values(checks).some(v => v !== true)) process.exit(1);
