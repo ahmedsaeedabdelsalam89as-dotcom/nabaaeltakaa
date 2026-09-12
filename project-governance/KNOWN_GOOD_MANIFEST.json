@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "project": "Naba Fleet System",
-  "createdAt": "2026-09-11T22:18:37.889Z",
+  "createdAt": "2026-09-12T08:44:08.578Z",
   "files": {
     "src/index.html": {
       "sha256": "03e459f1f6972477ba77e805774579f3bfbe4612cd029847b07753525235ab24",
@@ -104,20 +104,20 @@
       "size": 772
     },
     ".github/workflows/validate.yml": {
-      "sha256": "04300515b049af314bdd2f49b7d4567bed6237db6a8b7793074e409ab2590553",
-      "size": 683
+      "sha256": "1625a989c2c7ae8739e1d2ed7d36bd4ecef7c5a25314d338e6197d279f4b66c6",
+      "size": 674
     },
     ".github/workflows/build-windows.yml": {
-      "sha256": "46465e7ef932f5ca1a500d74448157cae447eafdb8402246a9fc76b00723f1fe",
-      "size": 1630
+      "sha256": "f26b2e7e7e10e24d8099137f5847e9a3e34fd94872893d6457b5898b26c4e446",
+      "size": 1621
     },
     ".github/workflows/build-windows-artifact.yml": {
-      "sha256": "35b6200e68ff1040e7cf120441ec6141e6ed90fe5c20f31fd5e95da73028e34f",
-      "size": 1082
+      "sha256": "00d5519d71725c964e5485db087bf16587cf21a9c1c3ad5062ab92396b2a3c29",
+      "size": 1073
     },
     ".github/workflows/security-deep.yml": {
-      "sha256": "094a349778ed2544fff8bfb29e095bdf4eff4982fb512308ba2a208559335fd2",
-      "size": 1039
+      "sha256": "557832d634f5c56194475b5b0e48297b90aef46980ad4743560e15a76e7239a3",
+      "size": 1030
     },
     "scripts/naba-code-guardian.mjs": {
       "sha256": "ce99543516aedef86d6b5633fbded4203b26c1d42bb1395948bb5e2cf534e21b",

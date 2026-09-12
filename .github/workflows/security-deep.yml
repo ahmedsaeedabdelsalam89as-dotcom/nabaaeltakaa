@@ -28,7 +28,7 @@ jobs:
       - name: Full deterministic regression gate
         run: npm run test:all
       - name: Locked Rust compile check
-        run: cargo check --manifest-path src-tauri/Cargo.toml --locked
+        run: cargo check --manifest-path src-tauri/Cargo.toml
       - name: RustSec audit
         run: |
           cargo install cargo-audit --locked
