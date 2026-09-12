@@ -772,6 +772,17 @@ table tr:hover td{background:rgba(201,162,39,.06);}
       </div>
 
       <div class="card" id="nabaCopilotCard">
+        <b data-naba-style="color:var(--gold2);"><span class="icon-glass">☁️</span> ربط ذكاء سحابي (Claude) — لفصاحة أعلى بالعربية</b>
+        <p class="small-note" data-naba-style="margin-top:4px;">اختياري. لو أدخلت مفتاح Anthropic API الخاص بك، سيُستخدَم بدل النموذج المحلي الصغير للحصول على ردود أكثر طلاقة بالعربية (التكلفة على حسابك حسب استخدام Anthropic الفعلي). المفتاح يُخزَّن على جهازك فقط، لا يُرسَل لأي مكان غير Anthropic مباشرة.</p>
+        <div class="toolbar" data-naba-style="margin-top:8px;">
+          <input id="nabaCloudAiKeyInput" class="paste-box" type="password" data-naba-style="max-width:420px;margin:0;" placeholder="sk-ant-... (مفتاح Anthropic API)">
+          <button type="button" class="btn primary" data-naba-onclick="saveNabaCloudAiKey()">💾 حفظ</button>
+          <button type="button" class="btn secondary" data-naba-onclick="clearNabaCloudAiKey()">إلغاء الربط</button>
+        </div>
+        <div id="nabaCloudAiStatus" class="small-note" data-naba-style="margin-top:6px;"></div>
+      </div>
+
+      <div class="card" id="nabaCopilotCard">
         <b data-naba-style="color:var(--gold2);"><span class="icon-glass">🧠</span> Naba AI Copilot — المساعد المحلي الذكي</b>
         <p class="small-note" data-naba-style="margin-top:4px;">اسأل سؤالًا حرًا عن الأسطول. النظام يحدد نوع المهمة ويستخرج أقل سياق لازم فقط، ثم يحاول الإجابة محليًا عبر WebLLM/WebGPU. لا تُرسل بيانات الأسطول إلى خادم خارجي. إذا لم يدعم الجهاز WebGPU، سيعرض النظام تحليلًا محليًا آمنًا بدل الفشل.</p>
         <textarea id="nabaCopilotQuestion" class="paste-box" rows="3" data-naba-style="margin-top:8px;" placeholder="مثال: ما أخطر المركبات اليوم؟ أو ما سبب ارتفاع استهلاك الوقود في مركبة معينة؟"></textarea>
@@ -19264,10 +19275,54 @@ function computeMaintenanceOptimization(){var f=computePredictiveFailureEngine()
   function nabaAiSelectLocalMinds(sig){if(sig.complexity<.38&&!sig.actionRisk)return ['operations','evidence','feasibility'];var ids=['operations','risk','evidence','feasibility','simulation'];if(sig.domain==='finance')ids.push('financial');if(sig.domain==='management'||sig.domain==='fleet')ids.push('human');if(sig.complexity>=.60){ids.push('contrarian');ids.push('creative');}return Array.from(new Set(ids));}
   function nabaAiLocalStructuredSolve(problem,opts){var sig=nabaAiIntelligenceSignals(problem),minds=nabaAiSelectLocalMinds(sig),r=nabaAiExecutiveThink(problem,{minds:minds});nabaAiUsageBump('localStructuredCalls');r.intelligence={engine:'local_structured_zero_token',minds:minds,externalTokens:0,networkRequired:false,signals:{complexity:sig.complexity,evidenceConfidence:sig.evidenceConfidence}};return r;}
   async function nabaAiLocalModelSynthesis(problem,structured,opts){opts=opts||{};var cfg=nabaAiIntelligenceConfig(),engine=await loadNabaLocalEngine(),ctx=buildNabaAgentContext(problem),brief={recommended:structured&&structured.executive&&structured.executive.recommended,alternatives:structured&&structured.executive&&structured.executive.alternatives,confidence:structured&&structured.executive&&structured.executive.confidence,challenge:structured&&structured.executive&&structured.executive.criticalChallenge};var response=await engine.chat.completions.create({messages:[{role:'system',content:'أنت طبقة صياغة محلية داخل NABA. لا تخترع حقائق أو أرقام. استخدم فقط السياق والتحليل المنظم. ميّز بين المؤكد والافتراض. قدّم حلاً قابلًا للتنفيذ بخطوات قصيرة، ومخاطر، ومؤشر نجاح، وخطة بديلة. لا تنفذ أي إجراء خارجي.'},{role:'user',content:'المشكلة: '+nabaAiCompactProblem(problem)+'\n\nالسياق الداخلي:\n'+ctx+'\n\nنتيجة المحركات الحتمية:\n'+JSON.stringify(brief)}],temperature:.15,max_tokens:cfg.localModelMaxTokens});nabaAiUsageBump('localModelCalls');var text=response&&response.choices&&response.choices[0]&&response.choices[0].message&&response.choices[0].message.content||'';return {ok:!!text,engine:'webllm_local',model:NABA_LOCAL_ENGINE_MODEL||null,text:text,externalTokens:0,privacy:'local_after_model_download'};}
+
+  // ☁️ ربط ذكاء سحابي حقيقي (Claude) — بديل اختياري لـ nabaAiLocalModelSynthesis لفصاحة عربية أعلى.
+  // المفتاح يُخزَّن محليًا فقط (localStorage)، ويُستخدَم فى نداء مباشر من المتصفح لواجهة Anthropic الرسمية
+  // (الرأس anthropic-dangerous-direct-browser-access مخصَّص رسميًا من Anthropic لهذا النمط بالتحديد، فلا
+  // حاجة لأي خادم وسيط أو تعديل فى كود Rust). نفس شكل الإخراج تمامًا مثل الدالة المحلية، لتبقى القراءة مكانًا واحدًا.
+  var NABA_CLOUD_AI_KEY_STORAGE = 'nabaCloudAiKeyV1';
+  function nabaCloudAiKey() { try { return localStorage.getItem(NABA_CLOUD_AI_KEY_STORAGE) || ''; } catch (e) { return ''; } }
+  function saveNabaCloudAiKey() {
+    var el = $('#nabaCloudAiKeyInput'); var key = el ? el.value.trim() : '';
+    if (!key) { showToast('أدخل المفتاح أولًا'); return; }
+    try { localStorage.setItem(NABA_CLOUD_AI_KEY_STORAGE, key); } catch (e) { showToast('تعذَّر الحفظ محليًا'); return; }
+    if (el) el.value = '';
+    var st = $('#nabaCloudAiStatus'); if (st) st.textContent = '✅ مفتاح Anthropic محفوظ (' + key.length + ' حرفًا) — سيُستخدَم تلقائيًا بدل النموذج المحلي فى المرة القادمة.';
+    showToast('✅ تم الربط بنجاح');
+  }
+  window.saveNabaCloudAiKey = saveNabaCloudAiKey;
+  function clearNabaCloudAiKey() {
+    try { localStorage.removeItem(NABA_CLOUD_AI_KEY_STORAGE); } catch (e) { /* تجاهل */ }
+    var st = $('#nabaCloudAiStatus'); if (st) st.textContent = 'تم إلغاء الربط — سيرجع النظام للنموذج المحلي.';
+    showToast('تم إلغاء الربط');
+  }
+  window.clearNabaCloudAiKey = clearNabaCloudAiKey;
+
+  async function nabaAiCloudModelSynthesis(problem, structured, opts) {
+    opts = opts || {};
+    var key = nabaCloudAiKey();
+    if (!key) throw new Error('لا يوجد مفتاح Anthropic محفوظ');
+    var ctx = buildNabaAgentContext(problem);
+    var brief = { recommended: structured && structured.executive && structured.executive.recommended, alternatives: structured && structured.executive && structured.executive.alternatives, confidence: structured && structured.executive && structured.executive.confidence, challenge: structured && structured.executive && structured.executive.criticalChallenge };
+    var res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', 'x-api-key': key, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-6', max_tokens: 1000,
+        system: 'أنت طبقة صياغة داخل نظام إدارة أسطول اسمه NABA. أجب بالعربية الفصحى الطبيعية فقط. لا تخترع حقائق أو أرقام غير موجودة فى السياق. ميّز بوضوح بين المؤكَّد والافتراض. قدّم حلاً عمليًا بخطوات قصيرة قابلة للتنفيذ، مع المخاطر ومؤشر النجاح وخطة بديلة إن أمكن. لا تنفّذ أي إجراء خارجي أبدًا — فقط اقترح.',
+        messages: [{ role: 'user', content: 'المشكلة: ' + nabaAiCompactProblem(problem) + '\n\nالسياق الداخلي:\n' + ctx + '\n\nنتيجة المحركات الحتمية:\n' + JSON.stringify(brief) }]
+      })
+    });
+    if (!res.ok) { var errText = await res.text().catch(function () { return ''; }); throw new Error('فشل الاتصال بـ Anthropic (' + res.status + '): ' + errText.slice(0, 200)); }
+    var data = await res.json();
+    var text = (data && data.content && data.content[0] && data.content[0].text) || '';
+    nabaAiUsageBump('localModelCalls');
+    return { ok: !!text, engine: 'cloud_claude', model: 'claude-sonnet-4-6', text: text, externalTokens: (data && data.usage && (data.usage.input_tokens + data.usage.output_tokens)) || null, privacy: 'sent_to_anthropic_directly' };
+  }
   async function nabaAiHybridSolve(problem,opts){opts=opts||{};var route=nabaAiRouteIntelligence(problem,opts),base=null,localModel=null,research=null;if(!route.ok)return route;
     if(route.route==='research_multimind'){try{nabaAiUsageBump('externalCalls');research=await nabaAiExecutiveResearchSolve(problem,opts);if(!(research&&research.researchResult&&research.researchResult.ok)){base=nabaAiLocalStructuredSolve(problem,opts);return {ok:true,version:NABA_HYBRID_VERSION,route:route,fallback:'local_structured_zero_token',result:base,research:research,warning:'تعذر البحث الخارجي؛ لم يتم اختراع مصادر.'};}return {ok:true,version:NABA_HYBRID_VERSION,route:route,result:research,research:research.researchResult};}catch(e){base=nabaAiLocalStructuredSolve(problem,opts);return {ok:true,version:NABA_HYBRID_VERSION,route:route,fallback:'local_structured_zero_token',result:base,warning:String(e&&e.message||e)};}}
     base=nabaAiLocalStructuredSolve(problem,opts);
-    if(route.route==='local_model_plus_multimind'){try{localModel=await nabaAiLocalModelSynthesis(problem,base,opts);}catch(e){localModel={ok:false,error:String(e&&e.message||e),fallback:'structured_result_retained'};}}
+    if(route.route==='local_model_plus_multimind'){try{localModel=nabaCloudAiKey()?await nabaAiCloudModelSynthesis(problem,base,opts):await nabaAiLocalModelSynthesis(problem,base,opts);}catch(e){localModel={ok:false,error:String(e&&e.message||e),fallback:'structured_result_retained'};}}
     return {ok:true,version:NABA_HYBRID_VERSION,route:route,result:base,localModel:localModel,externalTokens:0};}
   function nabaAiRouterBenchmark(cases){cases=Array.isArray(cases)?cases:[];var rows=cases.map(function(c){var p=typeof c==='string'?c:c.problem,r=nabaAiRouteIntelligence(p,{mode:(c&&c.mode)||'smart'});return {problem:String(p||'').slice(0,90),route:r.route,complexity:r.signals.complexity,externalAllowed:r.externalBudget.allowed};});return {ok:rows.length>0&&rows.every(function(x){return !!x.route;}),rows:rows};}
   try{registerNabaAiSkill('hybrid_reasoning',{department:'executive',requires:[],description:'توجيه ذكي بين المحركات المحلية صفر-توكن والنموذج المحلي والبحث الخارجي عند الضرورة',run:function(x){return nabaAiHybridSolve(x.command);}});}catch(_){ }
