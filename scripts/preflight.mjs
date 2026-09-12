@@ -17,8 +17,8 @@ const versions=[pkg.version,lock.version,lock.packages?.['']?.version,tauri.vers
 if(new Set(versions).size!==1) throw new Error('Version mismatch: '+versions.join(','));
 if(!cargoToml.includes(`version = "${pkg.version}"`)) throw new Error('Cargo.toml version mismatch');
 if(!cargoLock.includes(`name = "fleet-desktop"\nversion = "${pkg.version}"`)) throw new Error('Cargo.lock root version mismatch');
-if(pkg.version!=='1.13.21') throw new Error('Expected workspace version 1.13.21');
-if(!html.includes('— إصدار 1.13.21 — 2026-09-13')) throw new Error('Visible header version/date drift');
+if(pkg.version!=='1.13.22') throw new Error('Expected workspace version 1.13.22');
+if(!html.includes('— إصدار 1.13.22 — 2026-09-13')) throw new Error('Visible header version/date drift');
 const buildScript=read('BUILD_WINDOWS.ps1');
 for(const marker of ['npm run test:all','naba-code-guardian.mjs --verify','cargo check --manifest-path src-tauri/Cargo.toml --locked']) if(!buildScript.includes(marker)) throw new Error('Build gate missing '+marker);
 const caps=JSON.parse(read('src-tauri/capabilities/default.json'));
@@ -34,7 +34,7 @@ for(const marker of [
   'function nabaAiExecutiveThink(','function nabaAiEvidenceConflict(','hard_governance_reject','decisionState:decisionState','independentFirstPass:true','NABA_REFLECTION_VERSION=','function nabaAiReflect(','function nabaAiContinuousEval(','function nabaAiResearch(','Contrarian / Red Team','function nabaAiMultiMindBenchmark(',
   'Feasibility & Implementation Judge','function nabaAiFeasibilityScore(',"NABA_HYBRID_VERSION='2026-09-07.1'",
   'function nabaAiRouteIntelligence(','function nabaAiLocalStructuredSolve(','function nabaAiHybridSolve(',
-  'local_only','deep_research','preferZeroToken:true','externalTokens:0',"var APP_VERSION = '1.13.21'",
+  'local_only','deep_research','preferZeroToken:true','externalTokens:0',"var APP_VERSION = '1.13.22'",
   'function nabaSecureInvoke(','secure_secret_set','saveFirebaseSyncCredentials','requestId:(crypto.randomUUID'
 ]) if(!html.includes(marker)) throw new Error('Missing marker: '+marker);
 
