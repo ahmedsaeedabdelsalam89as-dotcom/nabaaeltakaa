@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "project": "Naba Fleet System",
-  "createdAt": "2026-09-12T08:47:21.342Z",
+  "createdAt": "2026-09-12T15:17:09.775Z",
   "files": {
     "src/index.html": {
       "sha256": "26c8ea8f2a261c32af6f09b3682ab945c54719de356923fd39703a9b228d1a25",
@@ -60,8 +60,8 @@
       "size": 127060
     },
     "src-tauri/tauri.conf.json": {
-      "sha256": "ac50819c8c45230ae5902e8d2d6e3212ae59ce4b384af6533ac58d04d46cb9c9",
-      "size": 1816
+      "sha256": "ae1f20e2ab6dba66358500b4528ceec4ee09617d1685457ede05b96227a92728",
+      "size": 1842
     },
     "src-tauri/tauri.no-updater.conf.json": {
       "sha256": "045e55901593915f744feabfb9a952abeeaa02d23342681e2bbe236a0da221e3",

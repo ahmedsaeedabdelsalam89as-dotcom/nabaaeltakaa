@@ -18,7 +18,7 @@
       }
     ],
     "security": {
-      "csp": "default-src 'self' asset: tauri: data: blob:; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://unpkg.com https://esm.run; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://unpkg.com; img-src 'self' data: blob: https:; font-src 'self' data: https:; connect-src 'self' ipc: http://ipc.localhost https://nabee-eltakaa-default-rtdb.firebaseio.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://gmail.googleapis.com https://api.mymemory.translated.net https://*.tile.openstreetmap.org https://7105.api.greenapi.com https://*.api.greenapi.com; worker-src 'self' blob:; frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self'"
+      "csp": "default-src 'self' asset: tauri: data: blob:; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://unpkg.com https://esm.run; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://unpkg.com; img-src 'self' data: blob: https:; font-src 'self' data: https:; connect-src 'self' ipc: http://ipc.localhost https://nabee-eltakaa-default-rtdb.firebaseio.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://gmail.googleapis.com https://api.mymemory.translated.net https://*.tile.openstreetmap.org https://7105.api.greenapi.com https://*.api.greenapi.com https://api.anthropic.com; worker-src 'self' blob:; frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self'"
     }
   },
   "bundle": {
