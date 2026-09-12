@@ -1,5 +1,5 @@
 {
-  "version": "1.13.15",
+  "version": "1.13.16",
   "released_at": "2026-09-12",
   "notes": "Certification integrity and trial gate hardening: exact runtime version evidence, fail-closed Windows certification, locked Rust dependency verification."
 }
