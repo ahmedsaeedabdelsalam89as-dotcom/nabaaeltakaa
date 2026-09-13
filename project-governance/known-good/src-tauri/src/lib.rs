@@ -70,36 +70,6 @@ async fn tracking_api_get(url: String, token: String) -> Result<TrackingHttpResp
     Ok(TrackingHttpResponse { ok, status, body })
 }
 
-// أمر Rust جديد لاتصال OpenAI — نفس نمط tracking_api_get بالضبط (Gate 3: إعادة استخدام كامل). ضروري لأن
-// OpenAI (على عكس Anthropic) ترفض أي اتصال مباشر من المتصفح عمدًا (لا ترسل Access-Control-Allow-Origin
-// للمتصفحات إطلاقًا)، فلا يوجد أي حل من جهة JavaScript وحدها — يجب أن يمر الطلب عبر الكود الأصلي (Rust)
-// الذى لا تُطبَّق عليه قيود CORS أصلًا (قيد متصفح بحت).
-#[tauri::command]
-async fn openai_api_post(body: String, token: String) -> Result<TrackingHttpResponse, String> {
-    let token = token.trim();
-    if token.len() < 8 || token.len() > 4096 {
-        return Err("مفتاح OpenAI غير صالح".into());
-    }
-    if body.len() > 200_000 {
-        return Err("حجم الطلب أكبر من المسموح".into());
-    }
-    let client = reqwest::Client::builder()
-        .timeout(std::time::Duration::from_secs(60))
-        .redirect(reqwest::redirect::Policy::none())
-        .build()
-        .map_err(|e| format!("تعذَّر تهيئة الاتصال: {}", e))?;
-    let resp = client
-        .post("https://api.openai.com/v1/chat/completions")
-        .header("content-type", "application/json")
-        .header("authorization", format!("Bearer {}", token))
-        .body(body)
-        .send()
-        .await
-        .map_err(|e| format!("تعذَّر الاتصال بخادم OpenAI: {}", e))?;
-    let (status, ok, resp_body) = bounded_response_text(resp, MAX_TRACKING_RESPONSE_BYTES, "خادم OpenAI").await?;
-    Ok(TrackingHttpResponse { ok, status, body: resp_body })
-}
-
 
 #[derive(serde::Serialize)]
 struct PhoneBridgeResponse { ok: bool, status: u16, body: String }
@@ -303,7 +273,7 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_process::init())
-        .invoke_handler(tauri::generate_handler![tracking_api_get, openai_api_post, phone_bridge_post, gmail_api_request, secure_secret_set, secure_secret_get, secure_secret_delete, certification_mode, certification_write_report, naba_peer::naba_peer_start, naba_peer::naba_peer_stop, naba_peer::naba_peer_status, naba_peer::naba_peer_snapshot, naba_peer::naba_peer_local_ip])
+        .invoke_handler(tauri::generate_handler![tracking_api_get, phone_bridge_post, gmail_api_request, secure_secret_set, secure_secret_get, secure_secret_delete, certification_mode, certification_write_report, naba_peer::naba_peer_start, naba_peer::naba_peer_stop, naba_peer::naba_peer_status, naba_peer::naba_peer_snapshot, naba_peer::naba_peer_local_ip])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
