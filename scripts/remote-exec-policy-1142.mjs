@@ -45,7 +45,7 @@ const expectedHosts = new Set(['https://cdn.jsdelivr.net','https://unpkg.com','h
 const unexpectedCspHosts = cspHosts.filter(h => !expectedHosts.has(h));
 
 const checks = {
-  version: conf.version === '1.13.28',
+  version: conf.version === '1.13.29',
   noDirectRemoteScriptTags: directRemoteScriptTags === 0,
   noJavascriptUrls: javascriptUrls === 0,
   remoteExecExactAllowlist: unexpected.length === 0,
