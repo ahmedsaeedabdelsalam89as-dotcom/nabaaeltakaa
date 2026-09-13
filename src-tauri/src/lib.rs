@@ -273,6 +273,7 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_process::init())
+        .plugin(tauri_plugin_stt::init())
         .invoke_handler(tauri::generate_handler![tracking_api_get, phone_bridge_post, gmail_api_request, secure_secret_set, secure_secret_get, secure_secret_delete, certification_mode, certification_write_report, naba_peer::naba_peer_start, naba_peer::naba_peer_stop, naba_peer::naba_peer_status, naba_peer::naba_peer_snapshot, naba_peer::naba_peer_local_ip])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

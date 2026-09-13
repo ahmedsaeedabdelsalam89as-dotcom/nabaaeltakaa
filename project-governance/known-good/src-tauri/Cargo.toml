@@ -1,6 +1,6 @@
 [package]
 name = "fleet-desktop"
-version = "1.13.26"
+version = "1.13.27"
 description = "A Tauri App"
 authors = ["you"]
 edition = "2021"
@@ -27,4 +27,8 @@ serde_json = "1"
 # التتبع اللحظي (Sactracking.com) — يتجاوز قيد CORS الذى يمنع أى اتصال مباشر من متصفح/صفحة ويب
 # محلية (origin=null)، لأن هذا الطلب يصدر من البرنامج نفسه (عميل HTTP فى Rust) لا من نافذة متصفح.
 reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
+# مضافة لدعم التعرف على الصوت محليًا (Whisper عبر whisper-rs) بعد ثبوت عدم موثوقية SpeechRecognition
+# المدمجة فى WebView2 (مؤكَّد رسميًا من دعم Microsoft نفسه). يعمل بالكامل دون اتصال إنترنت بعد تنزيل
+# النموذج مرة واحدة، ويدعم العربية ضمن 99 لغة (نموذج Whisper متعدد اللغات).
+tauri-plugin-stt = "0.2"
 

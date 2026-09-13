@@ -1,7 +1,7 @@
 {
   "name": "fleet-desktop",
   "private": true,
-  "version": "1.13.26",
+  "version": "1.13.27",
   "type": "module",
   "scripts": {
     "tauri": "tauri",
@@ -32,5 +32,8 @@
   },
   "devDependencies": {
     "@tauri-apps/cli": "^2"
+  },
+  "dependencies": {
+    "tauri-plugin-stt-api": "^0.2.2"
   }
 }
