@@ -858,7 +858,7 @@ dependencies = [
 
 [[package]]
 name = "fleet-desktop"
-version = "1.13.31"
+version = "1.13.32"
 dependencies = [
  "reqwest 0.12.28",
  "serde",
