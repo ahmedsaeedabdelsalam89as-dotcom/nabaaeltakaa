@@ -19,10 +19,10 @@ const tick=()=>new Promise(r=>setTimeout(r,0));
 {
   let applied=null, syncCalls=0, toast='';
   const durable={FLEET:[{plate:'OLD'}]};
-  const ctx={console,JSON,Date,window:{},APP:{FLEET:[{plate:'NEW'}]},STORAGE_KEY:'state',NABA_LAST_SAVE_FAILURE_AT:0,
+  const ctx={console,JSON,Date,window:{},APP:{FLEET:[{plate:'NEW'}]},STORAGE_KEY:'state',NABA_LAST_SAVE_FAILURE_AT:0,NABA_SAVED_STATE_PARSE_FAILED:false,validateStateArraysShape:()=>({ok:true,bad:[]}),
     localStorage:{setItem(){const e=new Error('quota');e.name='QuotaExceededError';throw e;},getItem(){return JSON.stringify(durable)}},
     fullStateSnapshot:()=>({FLEET:[{plate:'NEW'}]}),invalidateNabaCache(){},applyStateObject(x){applied=x;ctx.APP.FLEET=x.FLEET},
-    updateSyncTrackingForSave(){syncCalls++},schedulePushToSyncServer(){syncCalls++},renderAlertsBell(){},showToast(x){toast=x}
+    updateSyncTrackingForSave(){return {}},schedulePushToSyncServer(){syncCalls++},renderAlertsBell(){},showToast(x){toast=x}
   };
   vm.createContext(ctx); vm.runInContext(extractFunction('saveState'),ctx);
   if(ctx.saveState()!==false) throw new Error('saveState did not fail closed');
@@ -35,13 +35,13 @@ const tick=()=>new Promise(r=>setTimeout(r,0));
 {
   const toasts=[]; let rendered=0;
   const ctx={console,JSON,window:{},NABA_MAX_RESTORE_FILE_BYTES:100*1024*1024,NABA_STATE_ARRAY_FIELDS:['FLEET'],APP:{FLEET:[{plate:'OLD'}]},
-    validateStateArraysShape:o=>({ok:Array.isArray(o.FLEET),bad:[]}),fullStateSnapshot(){return {FLEET:JSON.parse(JSON.stringify(ctx.APP.FLEET))}},
+    validateStateArraysShape:o=>({ok:Array.isArray(o.FLEET),bad:[]}),NABA_SAVED_STATE_PARSE_FAILED:false,nabaPreparePortableRestore:async()=>{},nabaIncident(){},fullStateSnapshot(){return {FLEET:JSON.parse(JSON.stringify(ctx.APP.FLEET))}},
     applyStateObject(o){ctx.APP.FLEET=JSON.parse(JSON.stringify(o.FLEET||[]))},logActivity(){},saveState:()=>false,renderAll(){rendered++},showToast(x){toasts.push(x)},
     FileReader:class {readAsText(file){this.onload({target:{result:file.text}})}}
   };
   vm.createContext(ctx); vm.runInContext(extractFunction('handleRestore'),ctx);
   const event={target:{files:[{size:20,text:JSON.stringify({FLEET:[{plate:'RESTORED'}]})}],value:'x'}};
-  ctx.handleRestore(event);
+  ctx.handleRestore(event); await new Promise(r=>setTimeout(r,20));
   if(ctx.APP.FLEET[0].plate!=='OLD') throw new Error('restore rollback failed after save failure');
   if(rendered!==0) throw new Error('restore rendered success after save failure');
   if(!toasts.some(x=>/فشل الاستيراد/.test(x))) throw new Error('restore failure not visible');
@@ -51,13 +51,13 @@ const tick=()=>new Promise(r=>setTimeout(r,0));
 {
   const toasts=[]; let rendered=0, saved=0;
   const ctx={console,JSON,window:{},NABA_MAX_RESTORE_FILE_BYTES:100*1024*1024,NABA_STATE_ARRAY_FIELDS:['FLEET'],APP:{FLEET:[{plate:'OLD'}]},
-    validateStateArraysShape:o=>({ok:Array.isArray(o.FLEET),bad:[]}),fullStateSnapshot(){return {FLEET:JSON.parse(JSON.stringify(ctx.APP.FLEET))}},
+    validateStateArraysShape:o=>({ok:Array.isArray(o.FLEET),bad:[]}),NABA_SAVED_STATE_PARSE_FAILED:false,nabaPreparePortableRestore:async()=>{},nabaIncident(){},fullStateSnapshot(){return {FLEET:JSON.parse(JSON.stringify(ctx.APP.FLEET))}},
     applyStateObject(o){ctx.APP.FLEET=JSON.parse(JSON.stringify(o.FLEET||[]))},logActivity(){},saveState:()=>{saved++;return true},renderAll(){rendered++},showToast(x){toasts.push(x)},
     FileReader:class {readAsText(file){this.onload({target:{result:file.text}})}}
   };
   vm.createContext(ctx); vm.runInContext(extractFunction('handleRestore'),ctx);
   const event={target:{files:[{size:20,text:JSON.stringify({FLEET:[{plate:'RESTORED'}]})}],value:'x'}};
-  ctx.handleRestore(event);
+  ctx.handleRestore(event); await new Promise(r=>setTimeout(r,20));
   if(ctx.APP.FLEET[0].plate!=='RESTORED' || saved!==1 || rendered!==1) throw new Error('restore success path failed');
   if(!toasts.some(x=>/بنجاح/.test(x))) throw new Error('restore success not visible');
 }

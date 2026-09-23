@@ -9,7 +9,7 @@ async function stop(){const i=inv();return i?i('naba_peer_stop'):false}
 async function status(){const i=inv();return i?i('naba_peer_status'):{running:false}}
 async function pullInbox(){const i=inv();if(!i)return {ok:false};const rows=await i('naba_peer_snapshot');let a=[];try{a=JSON.parse(localStorage.getItem(INBOX)||'[]')}catch(_){};let seen=new Set(a.map(x=>x.operationId));let added=0;for(const x of (rows||[])){if(x&&x.operationId&&!seen.has(x.operationId)){a.push(x);seen.add(x.operationId);added++}}if(a.length>10000)a=a.slice(-10000);localStorage.setItem(INBOX,JSON.stringify(a));return {ok:true,added,total:a.length}}
 function inbox(){try{return JSON.parse(localStorage.getItem(INBOX)||'[]')}catch(_){return []}}
-function auto(){let enabled=localStorage.getItem(AUTO)!=='0';if(enabled)setTimeout(start,1200);setInterval(()=>{if(document.visibilityState==='visible')pullInbox().catch(e=>{try{console.warn('[NABA_SYNC_PULL_FAILED]',e)}catch(_){}})},15000)}
+function auto(){if(!inv())return;let enabled=localStorage.getItem(AUTO)==='1';if(enabled)setTimeout(start,1200);setInterval(()=>{if(document.visibilityState==='visible')pullInbox().catch(e=>{try{console.warn('[NABA_SYNC_PULL_FAILED]',e)}catch(_){}})},15000)}
 g.NABA_WINDOWS_SYNC={version:'1.3.0',ensureToken,start,stop,status,pullInbox,inbox,setAuto:v=>localStorage.setItem(AUTO,v?'1':'0')};
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',auto);else auto();
 })(window);

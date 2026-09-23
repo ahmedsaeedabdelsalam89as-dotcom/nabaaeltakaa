@@ -54,7 +54,7 @@ const repair=extractFunction('repairCorruptedDataArrays');
 assert(repair.includes('quarantineRecoveryPayload'),'startup repair missing quarantine');
 assert(repair.includes('NABA_STARTUP_BASELINE'),'startup repair missing known-good fallback');
 assert(!/APP\[key\]\s*=\s*\[\]/.test(repair),'startup repair destructively empties data');
-assert(html.includes('NABA_SAVED_STATE_PARSE_FAILED') && html.includes('if (!NABA_SAVED_STATE_PARSE_FAILED) if (!saveState()) return;'),'parse-failed saved state can be overwritten');
+assert(html.includes('NABA_SAVED_STATE_PARSE_FAILED') && /if \(!NABA_SAVED_STATE_PARSE_FAILED\) \{? ?if \(!saveState\(\)\) return;/.test(html),'parse-failed saved state can be overwritten');
 
 
 // Destructive mutation guard
@@ -65,7 +65,7 @@ assert(html.slice(html.indexOf('window.deleteViolation = function'), html.indexO
 
 // Persistence ordering: local durable write must precede sync metadata/push and failure must rollback.
 const saveFn=extractFunction('saveState');
-assert(saveFn.indexOf('localStorage.setItem(STORAGE_KEY') < saveFn.indexOf('updateSyncTrackingForSave()'),'sync metadata updated before durable save');
+assert(saveFn.indexOf('localStorage.setItem(STORAGE_KEY') < saveFn.indexOf('schedulePushToSyncServer()') && saveFn.indexOf('localStorage.setItem(STORAGE_KEY') < saveFn.indexOf('localStorage.removeItem(SYNC_META_KEY)'),'sync metadata updated before durable save');
 assert(saveFn.includes('applyStateObject(durableState, false)'),'save failure missing in-memory rollback');
 assert(saveFn.includes('if (ok)'),'failed save can still schedule sync');
 

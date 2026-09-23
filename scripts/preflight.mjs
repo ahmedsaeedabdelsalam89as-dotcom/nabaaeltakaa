@@ -17,8 +17,8 @@ const versions=[pkg.version,lock.version,lock.packages?.['']?.version,tauri.vers
 if(new Set(versions).size!==1) throw new Error('Version mismatch: '+versions.join(','));
 if(!cargoToml.includes(`version = "${pkg.version}"`)) throw new Error('Cargo.toml version mismatch');
 if(!cargoLock.includes(`name = "fleet-desktop"\nversion = "${pkg.version}"`)) throw new Error('Cargo.lock root version mismatch');
-if(pkg.version!=='1.13.32') throw new Error('Expected workspace version 1.13.32');
-if(!html.includes('— إصدار 1.13.32 — 2026-09-18')) throw new Error('Visible header version/date drift');
+if(pkg.version!=='1.42.1') throw new Error('Expected workspace version 1.42.1');
+if(!html.includes('— إصدار 1.42.1 — 2026-09-23')) throw new Error('Visible header version/date drift');
 const buildScript=read('BUILD_WINDOWS.ps1');
 for(const marker of ['npm run test:all','naba-code-guardian.mjs --verify','cargo check --manifest-path src-tauri/Cargo.toml --locked']) if(!buildScript.includes(marker)) throw new Error('Build gate missing '+marker);
 const caps=JSON.parse(read('src-tauri/capabilities/default.json'));
@@ -34,7 +34,7 @@ for(const marker of [
   'function nabaAiExecutiveThink(','function nabaAiEvidenceConflict(','hard_governance_reject','decisionState:decisionState','independentFirstPass:true','NABA_REFLECTION_VERSION=','function nabaAiReflect(','function nabaAiContinuousEval(','function nabaAiResearch(','Contrarian / Red Team','function nabaAiMultiMindBenchmark(',
   'Feasibility & Implementation Judge','function nabaAiFeasibilityScore(',"NABA_HYBRID_VERSION='2026-09-07.1'",
   'function nabaAiRouteIntelligence(','function nabaAiLocalStructuredSolve(','function nabaAiHybridSolve(',
-  'local_only','deep_research','preferZeroToken:true','externalTokens:0',"var APP_VERSION = '1.13.32'",
+  'local_only','deep_research','preferZeroToken:true','externalTokens:0',"var APP_VERSION = '1.42.1'",
   'function nabaSecureInvoke(','secure_secret_set','saveFirebaseSyncCredentials','requestId:(crypto.randomUUID'
 ]) if(!html.includes(marker)) throw new Error('Missing marker: '+marker);
 
@@ -56,11 +56,12 @@ for(const cspMarker of ["object-src 'none'","frame-src 'none'","connect-src"]) i
 for(const marker of ['requestId','replayed command','rate limit exceeded','expired command','invalid content length']) if(!bridge.includes(marker)) throw new Error('Phone Bridge missing '+marker);
 for(const marker of ['AndroidKeyStore','KeyGenParameterSpec','AES/GCM/NoPadding']) if(!bridgeStore.includes(marker)) throw new Error('Phone Bridge secure store missing '+marker);
 for(const marker of ['id="workspaceNav"','id="nabaCommandPalette"','id="nabaContextPanel"','./modules/naba-workspace.js','./styles/naba-workspace.css']) if(!html.includes(marker)) throw new Error('Workspace marker missing '+marker);
-for(const marker of ['window.NabaWorkspace','NabaFleetAI.hybridSolve','renderActionCenter','Ctrl+K']) if(!workspaceJs.includes(marker)) throw new Error('Workspace JS marker missing '+marker);
+for(const marker of ['window.NabaWorkspace','renderActionCenter','Ctrl+K']) if(!workspaceJs.includes(marker)) throw new Error('Workspace JS marker missing '+marker);
+if(!html.includes('window.NabaFleetAI.hybridSolve=')) throw new Error('hybridSolve export missing');
 if(!workspaceCss.includes('.naba-palette')||!workspaceCss.includes('.naba-context-panel')) throw new Error('Workspace CSS incomplete');
 
 
 const m=html.match(/<script[^>]+id=["']data-bundle["'][^>]*>([\s\S]*?)<\/script>/i); if(!m) throw new Error('data-bundle missing');
 const sha=crypto.createHash('sha256').update(m[1].trim()).digest('hex');
-if(sha!=='b9171a8aeefb22378ddc67a4c91caadd2b4d016da5cf43e21ab7846bf0271867') throw new Error('data-bundle changed');
+if(sha!=='70c7b1a1008ca78e4585cc75f4e7112e39ebc1b989fa2ccd01527794eb03189a') throw new Error('data-bundle changed');
 console.log('PREFLIGHT_OK',pkg.version,sha);
