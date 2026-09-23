@@ -28,7 +28,7 @@ function shell(){
  let last={token:'',url:'',discovery:false,running:false}; let reveal=false;
  const set=(k,v)=>{const n=root.querySelector(`[data-v="${k}"]`);if(n)n.textContent=v};
  async function refresh(){
-   const a=api(); if(!a){set('status','غير متاح خارج تطبيق Windows');root.querySelector('[data-v="status"]').dataset.ok='0';return}
+   const a=api(); if(!a||!(g.__TAURI_INTERNALS__||g.__TAURI__)){set('status','غير متاح خارج تطبيق Windows');root.querySelector('[data-v="status"]').dataset.ok='0';return}
    set('status','جاري الفحص…');
    try{
      const r=await a.start(); const s=await a.status();

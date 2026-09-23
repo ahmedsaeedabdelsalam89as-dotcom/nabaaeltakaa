@@ -19,13 +19,16 @@ function extractFunction(name){
 }
 // Command routing regression
 const ctx={}; vm.createContext(ctx);
-vm.runInContext(extractFunction('normalizeArabicNameLite')+'\n'+extractFunction('nabaAiIntent'),ctx);
+vm.runInContext(extractFunction('normalizeArabicNameLite')+'\n'+extractFunction('nabaAiIntentBase')+'\n'+extractFunction('nabaAiIntent'),ctx);
 const cases=[
  ['اعرض السائقين المعتمدين','drivers'],
  ['ما أهم أولويات ومخاطر اليوم؟','fleet_decisions'],
  ['اعرض الصيانة المفتوحة','maintenance'],
  ['حلل الوقود','fuel'],
- ['حالة الأسطول','fleet_status']
+ ['حالة الأسطول','fleet_status'],
+ ['مين سواق ب س ح 8584','vehicle_360'],
+ ['إيه وضع العربية ٨٥٨٤','vehicle_360'],
+ ['ملف السيارة ب س ح 8584','vehicle_360']
 ];
 for(const [q,want] of cases){ const got=ctx.nabaAiIntent(q); assert(got===want,`intent ${q}: ${got} != ${want}`); }
 assert((html.match(/onclick="setAndRunNabaCommand\(/g)||[]).length===5,'five NABA shortcuts must execute');
@@ -54,7 +57,7 @@ const repair=extractFunction('repairCorruptedDataArrays');
 assert(repair.includes('quarantineRecoveryPayload'),'startup repair missing quarantine');
 assert(repair.includes('NABA_STARTUP_BASELINE'),'startup repair missing known-good fallback');
 assert(!/APP\[key\]\s*=\s*\[\]/.test(repair),'startup repair destructively empties data');
-assert(html.includes('NABA_SAVED_STATE_PARSE_FAILED') && html.includes('if (!NABA_SAVED_STATE_PARSE_FAILED) if (!saveState()) return;'),'parse-failed saved state can be overwritten');
+assert(html.includes('NABA_SAVED_STATE_PARSE_FAILED') && /if \(!NABA_SAVED_STATE_PARSE_FAILED\) \{? ?if \(!saveState\(\)\) return;/.test(html),'parse-failed saved state can be overwritten');
 
 
 // Destructive mutation guard
@@ -65,7 +68,7 @@ assert(html.slice(html.indexOf('window.deleteViolation = function'), html.indexO
 
 // Persistence ordering: local durable write must precede sync metadata/push and failure must rollback.
 const saveFn=extractFunction('saveState');
-assert(saveFn.indexOf('localStorage.setItem(STORAGE_KEY') < saveFn.indexOf('updateSyncTrackingForSave()'),'sync metadata updated before durable save');
+assert(saveFn.indexOf('localStorage.setItem(STORAGE_KEY') < saveFn.indexOf('schedulePushToSyncServer()') && saveFn.indexOf('localStorage.setItem(STORAGE_KEY') < saveFn.indexOf('localStorage.removeItem(SYNC_META_KEY)'),'sync metadata updated before durable save');
 assert(saveFn.includes('applyStateObject(durableState, false)'),'save failure missing in-memory rollback');
 assert(saveFn.includes('if (ok)'),'failed save can still schedule sync');
 
@@ -87,3 +90,6 @@ if(!html.includes("priorities:(d.priorities||[]).slice(0,20)")) throw new Error(
 if(!html.includes("packet.intent === 'fleet_decisions'")) throw new Error('fleet_decisions dedicated summary missing');
 if(html.includes("registerNabaAiSkill('fleet_decisions', {department:'operations',requires:['decisions'],description:'أولويات وقرارات التشغيل',run:function(x){ return {ok:true,data:x.context.decisions}; }});")) throw new Error('fleet_decisions still returns heavyweight raw decision object');
 console.log('GUARDIAN_REGRESSION_OK',JSON.stringify({intents:cases.length,trackingKeys:keys.length,backup:true,startup:true,sync:true,pdf:true,fleetDecisionsCompact:true}));
+// v1.46.0 regressions: implausible fuel distance must not enter group statistics; stale open maintenance must be surfaced.
+assert(html.includes('if (r.eff === null || r.effUnreliable) return;'),'implausible fuel efficiency re-enters statistics (masking bug)');
+assert(html.includes("category: 'صيانة مفتوحة قديمة جدًا'"),'stale open maintenance check missing');

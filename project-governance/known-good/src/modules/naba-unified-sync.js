@@ -18,21 +18,25 @@ function enqueue(collection,id,payload,baseRevision=0){
 }
 function pending(){return jget(KQ,[]).filter(x=>x.status!=="synced")}
 function backoff(n){return Math.min(300000,1000*Math.pow(2,Math.min(n,8)))}
-async function flush(adapter){
+let flushing=null;
+async function flushQueue(adapter){
  if(!adapter||typeof adapter.push!=="function") return {ok:false,reason:"NO_BACKEND_ADAPTER",pending:pending().length};
  let q=jget(KQ,[]),now=Date.now(),done=0,failed=0,conflicts=0;
  for(const x of q){
-  if(x.status==="synced"||(+x.nextRetryAt||0)>now)continue;
-  x.status="syncing";jset(KQ,q);
+  if(x.status==="synced"||x.status==="conflict"||(+x.nextRetryAt||0)>now)continue;
+  function storeOperation(){const latest=jget(KQ,[]);const index=latest.findIndex(y=>y.operationId===x.operationId);if(index>=0){latest[index]=x;jset(KQ,latest);}}
+  x.status="syncing";storeOperation();
   try{
    const r=await adapter.push(x);
    if(r&&r.conflict){x.status="conflict";x.lastError="REVISION_CONFLICT";conflicts++;audit("conflict",{operationId:x.operationId,remote:r.remote});}
-   else{x.status="synced";x.syncedAt=new Date().toISOString();done++;audit("synced",{operationId:x.operationId});}
-  }catch(e){x.attempts=(x.attempts||0)+1;x.status="pending";x.lastError=String(e&&e.message||e);x.nextRetryAt=Date.now()+backoff(x.attempts);failed++;}
-  jset(KQ,q);
+   else if(r&&r.ok===true){x.status="synced";x.syncedAt=new Date().toISOString();done++;audit("synced",{operationId:x.operationId});}
+   else throw new Error('BACKEND_ACK_REQUIRED');
+  }catch(e){x.attempts=(x.attempts||0)+1;x.status="pending";x.lastError=String(e&&e.message||e);x.nextRetryAt=Date.now()+backoff(x.attempts);failed++;if(g.NabaReliability)g.NabaReliability.record('sync:queue',e);}
+  storeOperation();
  }
  return {ok:failed===0&&conflicts===0,done,failed,conflicts,pending:pending().length};
 }
+function flush(adapter){if(flushing)return flushing;flushing=flushQueue(adapter).finally(()=>{flushing=null});return flushing}
 function resolveConflict(local,remote,choice){
  if(choice==="remote")return remote;
  if(choice==="local")return {...local,revision:Math.max(local.revision||0,remote.revision||0)+1,operationId:uuid(),updatedAt:new Date().toISOString()};

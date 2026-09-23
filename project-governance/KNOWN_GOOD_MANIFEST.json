@@ -1,11 +1,11 @@
 {
   "schema": 1,
   "project": "Naba Fleet System",
-  "createdAt": "2026-09-18T05:05:32.549Z",
+  "createdAt": "2026-09-23T01:50:19.203Z",
   "files": {
     "src/index.html": {
-      "sha256": "f00d44cb6a1d8712c6e25761862a4d93600b064a83bba85666cf1764a1f9cc1e",
-      "size": 5837445
+      "sha256": "345cb4a521200452b7ce6bfc154cf12f262e70ccc7b6bed42bec7490c7589e2e",
+      "size": 9393894
     },
     "PROJECT_RULES.md": {
       "sha256": "bd684a72b5f7e636dc2fd13cddeeca08467de287414478539c25983c58119390",
@@ -16,28 +16,28 @@
       "size": 2606
     },
     "src/modules/naba-workspace.js": {
-      "sha256": "7cb3bd74eedfb411c78d538a2e463a99d5b3575f38999818da02f1cc5f5eb604",
-      "size": 18713
+      "sha256": "0165a3dd830428ffea5af28b63afbf565405bffc2f01c8780f07d73edb4b0d65",
+      "size": 15055
     },
     "src/modules/naba-unified-sync.js": {
-      "sha256": "30605c76c19f62071d608e80fdaa99940ff0775ee299c4936f4224655d50d260",
-      "size": 2911
+      "sha256": "5d5f9564a9b683d44acf0e085720be8843aac5855ff7b0dd1fa5b95a521d4d02",
+      "size": 3392
     },
     "src/modules/naba-peer-protocol.js": {
-      "sha256": "53215437b2c6f6ccabd402a56b39e83ec662599073bf1565890634ab9431c301",
-      "size": 736
+      "sha256": "905a85fc437eb7196fb004988afeb75f5b07a2eb07cd8ec651f7c9e3deedfaf9",
+      "size": 737
     },
     "src/modules/schema-gate.js": {
-      "sha256": "b6b6d4c46cc1133946c249681533757751b0e4191c627ef92d75c9ef6ae3c7cd",
-      "size": 411
+      "sha256": "8ff3d45b30fbceac570153dd6b3e369d6067fb5b3d07be4751279452a667e974",
+      "size": 412
     },
     "src/modules/naba-windows-sync.js": {
-      "sha256": "2b0afacbadd875318d4dcb614805abcde6316dbbffb4123f59b651559a2ec813",
-      "size": 2252
+      "sha256": "7c8cd351c390635c6a89626845f38a08ab517eb51938a48b70429de41d2b7c42",
+      "size": 2269
     },
     "src/modules/naba-sync-center.js": {
-      "sha256": "9cf8f5ea6d79442be1b028d33ea1574f494a92228e17ae892bf9b319e9bf1b25",
-      "size": 4029
+      "sha256": "0258d2b0b6fa9f2b116076a21d82f833c14d64bdd7fd2760a97dbc4ba1fa3a15",
+      "size": 4068
     },
     "src/styles/naba-workspace.css": {
       "sha256": "89b9fd95d4ffb98a6e80813dfc1f6e92e77266f3d28dfde5309abb22abddb8b5",
@@ -52,16 +52,16 @@
       "size": 188
     },
     "src-tauri/Cargo.toml": {
-      "sha256": "39f6a874593a12e4b2706c6d5eb46c3c19d5f3c25509ae0ab76c290a4f99b2ee",
-      "size": 1776
+      "sha256": "aa09fbf4667a20cd423b6a59c180b04c6a4fb8fd422c58616c07d35141bd7462",
+      "size": 1775
     },
     "src-tauri/Cargo.lock": {
-      "sha256": "c45d6800a0d27d0cbf7a656a70a54c4a74d8133c43c011b469d823587c6f2a8c",
-      "size": 127060
+      "sha256": "240d62f456fcabc6cc22b04a06534c2e969d404890b33f3492a117523c1d044f",
+      "size": 127059
     },
     "src-tauri/tauri.conf.json": {
-      "sha256": "80944999fce0ee9850305c7fa560e973a46bc2204e4a70e34fcd593f0e4bd68e",
-      "size": 1864
+      "sha256": "902df83028000fc2bade4c6fe3e04dc26ef836407fbc29954449f06aa12cc3b4",
+      "size": 1863
     },
     "src-tauri/tauri.no-updater.conf.json": {
       "sha256": "045e55901593915f744feabfb9a952abeeaa02d23342681e2bbe236a0da221e3",
@@ -72,16 +72,16 @@
       "size": 323
     },
     "package.json": {
-      "sha256": "c7f42453ed447ce6b61006607f48ff64a03b6ed9c3d4ca78d3b6122f637cb0eb",
-      "size": 2307
+      "sha256": "3116dceb298e8fbbaf8dedebce2848360eabd2e03b31d8fd61b5a1e660591465",
+      "size": 2306
     },
     "package-lock.json": {
-      "sha256": "c2437a5536e6720e4b16037c88f5562c28a3e550c9435606330c5da72e1df58a",
-      "size": 8115
+      "sha256": "e718f284a6b6dbd758150a6431c375594c80b0e9b353665198dbc9e7ed16de6c",
+      "size": 8113
     },
     "version.json": {
-      "sha256": "df8f400db6e52e06a86c6da062adc01b6db62c7f2f6197d6bf1c2d571a8ff4b5",
-      "size": 225
+      "sha256": "d5507f2b84c0747ed002fe3be41deb216feb8acd65cbc17676b54f522c396e82",
+      "size": 224
     },
     "BUILD_WINDOWS.ps1": {
       "sha256": "dad396ff55387d88e770645bb76417fbb7f903ea2b2eb3b4ea9cbe24451411ca",
@@ -124,16 +124,16 @@
       "size": 5189
     },
     "scripts/preflight.mjs": {
-      "sha256": "2712d860a7a81b9cc32c8d75275ad52f06c2596a1108916c9e371b64e5b981e2",
-      "size": 6075
+      "sha256": "ca7d6742de6246407c6e7b077772a9c30aa0ec8d6b5d7a68541dc1b907640bd0",
+      "size": 6146
     },
     "scripts/security-smoke.mjs": {
       "sha256": "4babdd110775798b5b9addf39a45af2623be7c9f00a117777b444f3ebd25a528",
       "size": 4899
     },
     "scripts/guardian-regression-smoke.mjs": {
-      "sha256": "74896ea0488c8ba17381f9bae5c94834ae1bcdf8603cd21758f714ef4ff67d9b",
-      "size": 6681
+      "sha256": "2f1f60efb7aac661c63f491f0d8d2d4872bbb55f99866807f509648978067a0c",
+      "size": 7388
     },
     "scripts/guardian-selftest.mjs": {
       "sha256": "c7222b4e02a5316af9d06d494a9f8d6fd743a9d059641824aa232bb12cec52f5",
@@ -164,20 +164,20 @@
       "size": 2518
     },
     "scripts/runtime-truth-1140.mjs": {
-      "sha256": "c7f71bfefbc7dcf42d0aa161754dcbe01afcad62f7ed7716b1964c7a13a14d62",
-      "size": 4552
+      "sha256": "67c41c4341e24c8b976219ffedc7d1ddcb487ba7499139a696bab78b2cff73f3",
+      "size": 4549
     },
     "scripts/trial-data-integrity-1141.mjs": {
-      "sha256": "a2d07d0c4ff7ccfd1e68781f95322a0395e70119a43ab6b7831c30383b0b1a36",
-      "size": 8265
+      "sha256": "ad98bcba80fd42075fed59e298f2229f5da76e4fd15dda19b65a009d8e265efb",
+      "size": 8611
     },
     "scripts/dashboard-project-fallback-smoke.mjs": {
       "sha256": "1eec081dc70ce81808647583d32c3134d565e24dde8260f6cbcde49c187cdd26",
       "size": 623
     },
     "scripts/startup-fault-isolation-smoke.mjs": {
-      "sha256": "c3a247c8031139a56486f2a57eecd5bbdacb78905f48d56a818ab19fe276beba",
-      "size": 564
+      "sha256": "3204219f27f0b81666f4560cef1b87f7696c86238d4efe545b26f0e20666b495",
+      "size": 568
     },
     "scripts/cognitive-smoke.mjs": {
       "sha256": "0d5d7efa6e715b44b5f29bd7f50e2a6957a79c942d45ed1cfd06d89e105e4100",
@@ -188,8 +188,8 @@
       "size": 3601
     },
     "scripts/workspace-smoke.mjs": {
-      "sha256": "d33c30c64f48689f1f6d552446e87873a85970e25c0ba0694c8a58715ef9706a",
-      "size": 1042
+      "sha256": "d8ac6b2b3af7d2b99cbc35ae100171720d19b33ac230cd2b9421d9026f916eac",
+      "size": 1050
     },
     "scripts/multimind-reliability.mjs": {
       "sha256": "ae4af9222c2358489b7b5bc299aa8ea12db309ce022b564a14ee5c99fcf7c99d",
