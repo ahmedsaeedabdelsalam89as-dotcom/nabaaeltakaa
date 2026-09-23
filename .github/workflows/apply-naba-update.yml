@@ -1,0 +1,30 @@
+name: Apply NABA update bundle
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/naba_update.bundle']
+  workflow_dispatch:
+permissions:
+  contents: write
+  actions: write
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Merge bundled commits into main
+        run: |
+          set -e
+          git config user.name "Claude"
+          git config user.email "noreply@anthropic.com"
+          git bundle verify .github/workflows/naba_update.bundle
+          git fetch .github/workflows/naba_update.bundle main:incoming
+          if git merge-base --is-ancestor incoming HEAD; then echo "already applied"; exit 0; fi
+          git merge --no-edit -m "دمج تحديثات v1.42.1 → v1.46.0 من الحزمة" incoming
+          git push origin HEAD:main
+      - name: Start signed Windows release build
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh workflow run build-windows.yml --ref main
