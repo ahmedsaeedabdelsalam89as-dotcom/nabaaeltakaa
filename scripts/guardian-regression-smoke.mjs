@@ -90,3 +90,6 @@ if(!html.includes("priorities:(d.priorities||[]).slice(0,20)")) throw new Error(
 if(!html.includes("packet.intent === 'fleet_decisions'")) throw new Error('fleet_decisions dedicated summary missing');
 if(html.includes("registerNabaAiSkill('fleet_decisions', {department:'operations',requires:['decisions'],description:'أولويات وقرارات التشغيل',run:function(x){ return {ok:true,data:x.context.decisions}; }});")) throw new Error('fleet_decisions still returns heavyweight raw decision object');
 console.log('GUARDIAN_REGRESSION_OK',JSON.stringify({intents:cases.length,trackingKeys:keys.length,backup:true,startup:true,sync:true,pdf:true,fleetDecisionsCompact:true}));
+// v1.46.0 regressions: implausible fuel distance must not enter group statistics; stale open maintenance must be surfaced.
+assert(html.includes('if (r.eff === null || r.effUnreliable) return;'),'implausible fuel efficiency re-enters statistics (masking bug)');
+assert(html.includes("category: 'صيانة مفتوحة قديمة جدًا'"),'stale open maintenance check missing');
