@@ -19,13 +19,16 @@ function extractFunction(name){
 }
 // Command routing regression
 const ctx={}; vm.createContext(ctx);
-vm.runInContext(extractFunction('normalizeArabicNameLite')+'\n'+extractFunction('nabaAiIntent'),ctx);
+vm.runInContext(extractFunction('normalizeArabicNameLite')+'\n'+extractFunction('nabaAiIntentBase')+'\n'+extractFunction('nabaAiIntent'),ctx);
 const cases=[
  ['اعرض السائقين المعتمدين','drivers'],
  ['ما أهم أولويات ومخاطر اليوم؟','fleet_decisions'],
  ['اعرض الصيانة المفتوحة','maintenance'],
  ['حلل الوقود','fuel'],
- ['حالة الأسطول','fleet_status']
+ ['حالة الأسطول','fleet_status'],
+ ['مين سواق ب س ح 8584','vehicle_360'],
+ ['إيه وضع العربية ٨٥٨٤','vehicle_360'],
+ ['ملف السيارة ب س ح 8584','vehicle_360']
 ];
 for(const [q,want] of cases){ const got=ctx.nabaAiIntent(q); assert(got===want,`intent ${q}: ${got} != ${want}`); }
 assert((html.match(/onclick="setAndRunNabaCommand\(/g)||[]).length===5,'five NABA shortcuts must execute');
