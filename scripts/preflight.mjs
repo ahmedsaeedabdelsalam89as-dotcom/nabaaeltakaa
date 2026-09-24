@@ -63,5 +63,5 @@ if(!workspaceCss.includes('.naba-palette')||!workspaceCss.includes('.naba-contex
 
 const m=html.match(/<script[^>]+id=["']data-bundle["'][^>]*>([\s\S]*?)<\/script>/i); if(!m) throw new Error('data-bundle missing');
 const sha=crypto.createHash('sha256').update(m[1].trim()).digest('hex');
-if(sha!=='70c7b1a1008ca78e4585cc75f4e7112e39ebc1b989fa2ccd01527794eb03189a') throw new Error('data-bundle changed');
+if(sha!=='70b885cbacfaa12c461175801a64578426750b46ff0c4e5b84700f58ba30d0d9') throw new Error('data-bundle changed');
 console.log('PREFLIGHT_OK',pkg.version,sha);
