@@ -31,7 +31,11 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
+      # v3 افتراضيًا يحاول تثبيت حزمة "tools" القديمة الملغاة من مستودع Google (فشل حقيقي شوهد فى أول
+      # تشغيل: "Failed to find package 'tools'" → exit code 1) — تحديد الحزم صراحةً يتجاوز هذا العطل.
       - uses: android-actions/setup-android@v3
+        with:
+          packages: 'platform-tools platforms;android-34 build-tools;34.0.0'
 
       - name: Accept Android SDK licenses
         run: yes | sdkmanager --licenses > /dev/null || true
