@@ -19251,20 +19251,51 @@ function computeMaintenanceOptimization(){var f=computePredictiveFailureEngine()
     return nabaAiCompactValue(data,0);
   }
 
-  function runNabaCommandCenter() {
+  // 🎙️ 2026-09-25: بدل ما نرجع "استخدم Naba AI Copilot" ونسيب أحمد يدوّر بنفسه، أي أمر (مكتوب أو صوتي) ماحدش
+  // من المهارات المصنّفة عرفت تجاوبه بدقة، يتحول تلقائيًا للمحرك الأعمق نفسه اللي بيشغّل Naba AI Copilot
+  // (نفس نداء الذكاء السحابي المتصل بمفتاح Anthropic المحفوظ)، وبدون ما يوقف عنده — لو مفيش مفتاح سحابي أو
+  // الاتصال فشل، بيرجع بنفس التحليل المحلي الحتمي اللي بيستخدمه الكوبايلوت أصلًا، مش رسالة تحويل فاضية.
+  async function nabaAiSmartAnswer(command) {
+    var packet;
+    try { packet = runNabaAiCommand(command); }
+    catch (err) { packet = { ok: false, error: String(err && err.message || err) }; }
+    var needsDeepAi = !!(packet && packet.ok && packet.result && packet.result.needsCopilot);
+    if (!needsDeepAi) return { packet: packet, text: nabaAiCommandSummary(packet), source: 'engine' };
+    try { await hydrateNabaCloudAiKey(); } catch (_) { if (typeof console !== 'undefined' && console.warn) console.warn('[naba-silent-catch]', _ && _.message || _); }
+    if (nabaCloudAiKey()) {
+      try {
+        var cloudRes = await nabaAiCloudModelSynthesisAny(command, { executive: {} }, {});
+        return { packet: packet, text: cloudRes.text || 'لم يصل رد من النموذج السحابي.', source: 'cloud' };
+      } catch (err) {
+        var isNetworkBlock = err && (err.name === 'TypeError' || /failed to fetch/i.test(String(err.message || '')));
+        var diagLine = isNetworkBlock
+          ? '⛔ فشل الاتصال الشبكي بالذكاء السحابي — تأكد من الإنترنت.'
+          : '⚠ رد الذكاء السحابي بخطأ (تحقق من صحة المفتاح): ' + String(err && err.message || err);
+        return { packet: packet, text: nabaLocalFallback(command) + '\n\n' + diagLine, source: 'local_fallback_error' };
+      }
+    }
+    return { packet: packet, text: nabaLocalFallback(command), source: 'local_fallback' };
+  }
+  window.nabaAiSmartAnswer = nabaAiSmartAnswer;
+
+  async function runNabaCommandCenter() {
     var input=$('#nabaCommandInput'), status=$('#nabaCommandStatus'), out=$('#nabaCommandResult');
     if (!input || !out) return;
     var command=String(input.value||'').trim();
     if (!command) { if(status) status.textContent='اكتب أو قل الأمر أولًا.'; return; }
     if(status) status.textContent='جارِ التنفيذ عبر Fleet AI Core...';
-    var packet;
-    try { packet=window.NabaFleetAI && window.NabaFleetAI.run ? window.NabaFleetAI.run(command) : {ok:false,error:'Fleet AI Core غير متاح'}; }
-    catch(err){ packet={ok:false,error:String(err&&err.message||err)}; }
-    var summary=nabaAiCommandSummary(packet);
+    var answer;
+    try { answer = await nabaAiSmartAnswer(command); }
+    catch (err) { answer = { packet:{ok:false,error:String(err&&err.message||err)}, text:'تعذر التنفيذ: '+String(err&&err.message||err), source:'error' }; }
+    var packet=answer.packet, summary=answer.text;
     NABA_AI_COMMAND_LAST_TEXT=summary;
     out.innerHTML='<div class="card" data-naba-style="margin:0;background:rgba(255,255,255,.035);"><div data-naba-style="white-space:pre-wrap;line-height:1.8;">'+escapeHtml(summary)+'</div></div>';
-    if(status) status.textContent=(packet&&packet.ok?'✔ تم التنفيذ':'⚠ تعذر الإكمال')+' — المسار: '+escapeHtml(String(packet&&packet.intent||'غير محدد'));
-    nabaAiAudit('command_center_result',{command:command,intent:packet&&packet.intent||'',ok:!!(packet&&packet.ok)});
+    var sourceLabel = answer.source==='cloud' ? '✔ إجابة الذكاء السحابي (Claude)'
+      : answer.source==='local_fallback' ? 'تحليل محلي آمن (بدون مفتاح سحابي محفوظ)'
+      : answer.source==='local_fallback_error' ? 'تحليل محلي احتياطي (تعذر الاتصال بالسحابة)'
+      : (packet&&packet.ok?'✔ تم التنفيذ':'⚠ تعذر الإكمال');
+    if(status) status.textContent=sourceLabel+' — المسار: '+escapeHtml(String(packet&&packet.intent||'غير محدد'));
+    nabaAiAudit('command_center_result',{command:command,intent:packet&&packet.intent||'',ok:!!(packet&&packet.ok),source:answer.source});
     return packet;
   }
 
@@ -19556,7 +19587,7 @@ function computeMaintenanceOptimization(){var f=computePredictiveFailureEngine()
   function nabaVoiceIsYes(t){ return /^(?:ايوه|ايوا|نعم|موافق|وافق|تمام|نفذ|اكيد)$/.test(nabaVoiceNormalizeArabic(t)); }
   function nabaVoiceIsNo(t){ return /^(?:لا|لأ|الغ|الغي|رفض|مش موافق)$/.test(nabaVoiceNormalizeArabic(t)); }
   function nabaVoiceCompactReply(packet){ try{return nabaAiCommandSummary(packet);}catch(e){return packet&&packet.result&&packet.result.message || packet&&packet.error || 'تم تنفيذ الطلب.';} }
-  function nabaVoiceExecute(text,confidence){
+  async function nabaVoiceExecute(text,confidence){
     var now=Date.now(), raw=String(text||'').trim();
     if(!raw) return null;
     if(NABA_VOICE_STATE.lastHeardText===raw && now-NABA_VOICE_STATE.lastHeardAt<nabaVoiceLoadConfig().duplicateWindowMs) return null;
@@ -19581,10 +19612,13 @@ function computeMaintenanceOptimization(){var f=computePredictiveFailureEngine()
         return nabaVoiceReply('هبدأ الاتصال بـ '+contact.name+'.');
       }
     }catch (_) { if (typeof console !== 'undefined' && console.warn) console.warn('[naba-silent-catch]', _ && _.message || _); }
-    setNabaCommand(cmd); var packet=runNabaAiCommand(cmd), reply=nabaVoiceCompactReply(packet); NABA_VOICE_STATE.lastReply=reply; nabaVoiceHistoryPush('assistant',reply);
+    setNabaCommand(cmd);
+    var answer; try{ answer=await nabaAiSmartAnswer(cmd); }catch(err){ answer={packet:{ok:false,error:String(err&&err.message||err)},text:'تعذر التنفيذ: '+String(err&&err.message||err),source:'error'}; }
+    var packet=answer.packet, reply=answer.text;
+    NABA_VOICE_STATE.lastReply=reply; nabaVoiceHistoryPush('assistant',reply);
     var box=$('#nabaCommandResult'); if(box){ try{box.innerHTML='<pre data-naba-style="white-space:pre-wrap;direction:rtl;text-align:right;">'+escapeHtml(reply)+'</pre>';}catch(e){box.textContent=reply;} }
     var st=$('#nabaCommandStatus'); if(st) st.textContent=packet&&packet.ok===false?'تعذر تنفيذ الأمر.':'تم تنفيذ الأمر صوتيًا.';
-    if(typeof nabaAiAudit==='function') nabaAiAudit('voice_turn',{version:NABA_VOICE_VERSION,command:cmd,intent:packet&&packet.intent||'',ok:!!(packet&&packet.ok!==false)});
+    if(typeof nabaAiAudit==='function') nabaAiAudit('voice_turn',{version:NABA_VOICE_VERSION,command:cmd,intent:packet&&packet.intent||'',ok:!!(packet&&packet.ok!==false),source:answer.source});
     return nabaVoiceReply(reply);
   }
   function nabaVoicePickVoice(locale){ var voices=window.speechSynthesis?window.speechSynthesis.getVoices():[]; return voices.find(function(v){return (v.lang||'').toLowerCase()===locale.toLowerCase();}) || voices.find(function(v){return /^ar/i.test(v.lang||'');}) || null; }
