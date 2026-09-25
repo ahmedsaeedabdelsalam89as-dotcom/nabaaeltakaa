@@ -10615,15 +10615,26 @@ function renderPredictiveDispatch(){
   }
   function fetchWhatsAppGroupsList() {
     var box = $('#waGroupsListBox'), status = $('#waSettingsStatus');
+    // 🐛 إصلاح حقيقي (2026-09-25، بلاغ أحمد المباشر: "الزرار ما بيشتغلش خالص، مفيش حاجة ظاهرة ولا أي
+    // استدعاء"): كل مسارات الفشل هنا (حقول ناقصة/رابط غير صالح/فشل الشبكة) كانت تعرض toast عابر بس
+    // (يختفي خلال ثوانٍ) وتمسح status.textContent — فلو المستخدم فاته الـtoast، تبدو الشاشة "كأنها
+    // ما عملتش حاجة خالص" رغم إن الكود بيشتغل فعليًا. الحل: كل رسالة فشل تتكتب أيضًا بشكل ثابت جوه
+    // waGroupsListBox نفسه (نفس مكان عرض النتيجة الناجحة)، فتفضل ظاهرة لحد ما يدوس تاني.
     var s = {
       apiUrl: ($('#waApiUrl').value || '').trim().replace(/\/+$/, ''),
       idInstance: ($('#waIdInstance').value || '').trim(),
       apiToken: ($('#waApiToken').value || '').trim() || NABA_WA_TOKEN_CACHE
     };
-    if (!s.apiUrl || !s.idInstance || !s.apiToken) { showToast('⚠ أدخل apiUrl وidInstance وapiTokenInstance أولًا (أو احفظهم مرة واحدة قبل كده)'); return; }
+    function showPersistentError(msg) {
+      showToast('⚠ ' + msg);
+      if (box) box.innerHTML = '<p class="small-note" data-naba-style="color:#e05a5a;">⚠ ' + escapeHtml(msg) + '</p>';
+      if (status) status.textContent = '';
+    }
+    if (!s.apiUrl || !s.idInstance || !s.apiToken) { showPersistentError('أدخل apiUrl وidInstance وapiTokenInstance أولًا (أو احفظهم مرة واحدة قبل كده)'); return; }
     var conn = validateWhatsAppConnection(s);
-    if (!conn.ok) { showToast('⚠ ' + conn.message); return; }
+    if (!conn.ok) { showPersistentError(conn.message); return; }
     if (status) status.textContent = 'جارٍ جلب قايمة الجروبات...';
+    if (box) box.innerHTML = '<p class="small-note">⏳ جارِ الاتصال بـ Green API...</p>';
     waFetchContactsRaw(conn, s).then(function (list) {
       if (status) status.textContent = '';
       var groups = (Array.isArray(list) ? list : []).filter(function (c) {
@@ -10642,8 +10653,7 @@ function renderPredictiveDispatch(){
         }).join('');
       $all('.wa-group-add-btn', box).forEach(function (btn) { btn.addEventListener('click', function () { addWhatsAppGroupId(btn.dataset.gid); }); });
     }).catch(function (err) {
-      if (status) status.textContent = '';
-      showToast('❌ تعذَّر جلب قايمة الجروبات: ' + err.message);
+      showPersistentError('تعذَّر جلب قايمة الجروبات: ' + String(err && err.message || err));
     });
   }
   window.fetchWhatsAppGroupsList = fetchWhatsAppGroupsList;
@@ -10706,8 +10716,12 @@ function renderPredictiveDispatch(){
       if (status) status.innerHTML = diagHtml;
       showToast('✅ تم جلب ' + textMessages.length + ' رسالة جديدة (من إجمالي ' + (messages || []).length + ' فى آخر دفعة)');
     }).catch(function (err) {
-      if (status) status.textContent = '';
-      showToast('❌ تعذَّر الجلب: ' + err.message);
+      // 🐛 نفس إصلاح 2026-09-25: خطأ الجلب هنا (غالبًا "أكمل إعدادات الاتصال أولًا واحفظها" لو الجروبات
+      // اتضافت بزرار ➕ بس ما اتحفظتش بـ"حفظ الإعدادات" بعدها) كان يظهر toast عابر بس فيختفي بسرعة —
+      // الآن يتكتب أيضًا بشكل ثابت مكان نتيجة الجلب نفسها حتى يفضل ظاهر.
+      var msg = String(err && err.message || err);
+      if (status) status.innerHTML = '<span data-naba-style="color:#e05a5a;">⚠ ' + escapeHtml(msg) + '</span>';
+      showToast('❌ تعذَّر الجلب: ' + msg);
     });
   }
   window.fetchWhatsAppMessages = fetchWhatsAppMessages;
