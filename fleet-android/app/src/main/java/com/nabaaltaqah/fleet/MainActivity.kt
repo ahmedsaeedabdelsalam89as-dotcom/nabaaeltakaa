@@ -79,6 +79,12 @@ class MainActivity : ComponentActivity() {
         webView = WebView(this)
         setContentView(webView)
         webView.addJavascriptInterface(NabaSecureBridge(applicationContext), "NabaSecure")
+        // جسر تتبع GPS اللحظى (Sactracking.com) — يسد فجوة اكتُشفت فعليًا: نسخة أندرويد لم يكن لها أى
+        // مسار يتجاوز قيد CORS (نسخة الويندوز تتجاوزه عبر أمر Rust). انظر NabaTrackingBridge.kt للتفاصيل.
+        webView.addJavascriptInterface(
+            NabaTrackingBridge { js -> runOnUiThread { webView.evaluateJavascript(js, null) } },
+            "NabaTracking"
+        )
 
         val s: WebSettings = webView.settings
         s.javaScriptEnabled = true
