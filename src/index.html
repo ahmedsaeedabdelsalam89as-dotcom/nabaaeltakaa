@@ -622,6 +622,7 @@ table tr:hover td{background:rgba(201,162,39,.06);}
     <button type="button" data-page="data" data-label="إدارة البيانات"><span class="nav-icon">🗂️</span><span class="nav-label">إدارة البيانات</span></button>
     <div class="nav-divider"></div>
     <button type="button" data-page="tools" data-label="أدوات مساعدة"><span class="nav-icon">🧰</span><span class="nav-label">أدوات مساعدة</span></button>
+    <button type="button" data-page="devtab" data-label="تبويب المطور"><span class="nav-icon">🛠️</span><span class="nav-label">تبويب المطور</span></button>
   </nav>
 
   <main>
@@ -1989,6 +1990,34 @@ table tr:hover td{background:rgba(201,162,39,.06);}
           <div id="versionLogBody" data-naba-style="max-height:260px;overflow-y:auto;margin-top:8px;font-size:13px;line-height:1.9;"></div>
         </div>
 
+      </div>
+    </section>
+
+    <!-- تبويب المطور — واجهة مبسطة لمتابعة تطوّر البرنامج ومعرفة الخطوة القادمة، بلغة عملية لا تقنية.
+         النسخة الأولى (v1، 2026-09-25): تعرض سجل التحديثات الحقيقي بصياغة "بيفيدك فى ايه"، وقائمة خطوات
+         مقترحة حقيقية (مش عناوين عامة) مبنية على مراجعة فعلية لحالة البرنامج فى هذه الجلسة. البحث التلقائي
+         المستمر عبر الإنترنت (اللي طلبته فى وصف المشروع الأصلي) لسه مش مفعَّل تلقائيًا لأسباب أمان حقيقية
+         (فتح اتصال إنترنت حر من داخل برنامج سطح مكتب يوسّع سطح الهجوم بشكل كبير) — موضَّح بصراحة أسفل الصفحة
+         بدل الادّعاء بميزة غير موجودة فعليًا. -->
+    <section class="page" id="page-devtab">
+      <h2 class="pagetitle">🛠️ تبويب المطور — إيه الجديد وإيه الخطوة الجاية</h2>
+      <p class="small-note">مفيش لغة تقنية هنا — كل حاجة مكتوبة بلغة "ده بيفيدك فى ايه" و"الخطوة الجاية ايه"، عشان تقدر تتابع تطور البرنامج وتاخد قرار من غير ما تحتاج تفهم الكود.</p>
+
+      <div class="card">
+        <b data-naba-style="color:var(--gold2);">🚀 الخطوات المقترحة دلوقتي</b>
+        <p class="small-note">قائمة حقيقية مبنية على مراجعة فعلية للبرنامج — مش عناوين عامة. كل بند موضّح فيه: هيضيفلك ايه، وإيه اللي محتاج منك.</p>
+        <div id="devTabRoadmap" data-naba-style="margin-top:8px;"></div>
+      </div>
+
+      <div class="card" data-naba-style="margin-top:14px;">
+        <b data-naba-style="color:var(--gold2);">📋 آخر التحديثات — بلغة بسيطة</b>
+        <p class="small-note">نفس سجل الإصدارات الموجود فى "أدوات مساعدة"، لكن هنا مرتب حسب "إيه اللي اتضاف وليه يهمك"، الأحدث أولًا.</p>
+        <div id="devTabUpdates" data-naba-style="max-height:340px;overflow-y:auto;margin-top:8px;"></div>
+      </div>
+
+      <div class="card" data-naba-style="margin-top:14px;">
+        <b data-naba-style="color:var(--gold2);">🔎 البحث التلقائي عن تحديثات — الوضع الحقيقي دلوقتي</b>
+        <p class="small-note">بصراحة: البرنامج لسه مايبحثش بنفسه فى الإنترنت بشكل تلقائي ومستمر عن تحديثات أو أدوات جديدة — ده قرار أمان مقصود، لأن فتح اتصال حر بالإنترنت من جوه برنامج سطح المكتب يزوّد فرص الاختراق بشكل حقيقي. اللي بيحصل فعليًا دلوقتي: أنا (فى أي جلسة تفتحها معايا) بابحث بنفسي عن حلول وتحديثات حقيقية وقت الحاجة، بس مش البرنامج نفسه وهو شغال عندك. لو عايز فعلاً ميزة بحث تلقائي جوه البرنامج نفسه، ده محتاج تصميم أمان منفصل (قائمة مواقع موثوقة محدَّدة سلفًا، ومراجعة قبل أي تفعيل) — وده اقتراح فى القائمة فوق تقدر توافق عليه لما تكون جاهز.</p>
       </div>
     </section>
   </main>
@@ -20698,6 +20727,11 @@ function computeMaintenanceOptimization(){var f=computePredictiveFailureEngine()
   window.connectNabaEmailSession=connectNabaEmailSession;window.searchNabaEmail=searchNabaEmail;window.selectNabaEmail=selectNabaEmail;window.prepareNabaEmailReply=prepareNabaEmailReply;window.sendNabaEmailReply=sendNabaEmailReply;
   window.NabaEmailIntelligence={version:NABA_EMAIL_VERSION,deepContext:nabaEmailDeepContext,search:searchNabaEmail,prepareReply:prepareNabaEmailReply};
   var VERSION_LOG = [
+    {date:'2026-09-25',version:'1.46.0-devtab',title:'🛠️ تبويب "المطور" الجديد — متابعة تطور البرنامج والخطوة الجاية بلغة بسيطة',items:[
+      'صفحة جديدة فى القائمة الجانبية (تبويب المطور) تعرض سجل التحديثات الحقيقي بصياغة "ده بيفيدك فى ايه" بدل اللغة التقنية، وقائمة خطوات مقترحة حقيقية مبنية على مراجعة فعلية لحالة البرنامج (مش عناوين عامة أو أفكار افتراضية)',
+      'كل خطوة مقترحة مُصنَّفة بوضوح: "يحتاج منك دقيقتين" (اختبار سريع)، "قرار بسيط منك" (موافقة/رفض)، أو "بحث إضافي مطلوب" — عشان تعرف فورًا إيه اللي محتاج فعل منك وإيه اللي شغال لوحده',
+      'ملاحظة أمان بالنص الصريح: البحث التلقائي المستمر عبر الإنترنت من جوه البرنامج نفسه (المطلوب فى وصف المشروع الأصلي) لسه غير مفعَّل — فتح اتصال حر بالإنترنت من برنامج سطح مكتب يزيد سطح الهجوم فعليًا، فمُوثَّق كخطوة مستقبلية تحتاج تصميم أمان منفصل بدل الادّعاء بميزة غير موجودة'
+    ]},
     {date:'2026-09-25',version:'1.46.0-android-gps-fix',title:'🛰️ إصلاح فجوة حقيقية: تتبع GPS اللحظي كان لا يعمل إطلاقًا على تطبيق أندرويد',items:[
       'اكتُشف بالمراجعة الفعلية (لا تخمينًا): نسخة أندرويد لم يكن لها أي مسار يتجاوز قيد CORS المفروض من خادم Sactracking.com — نسخة الويندوز تتجاوزه عبر أمر Rust (tracking_api_get)، وأندرويد كان بيسقط على fetch() مباشر (يُرفَض) ثم على دالة Firebase الوسيطة التي أصلًا لا تُستدعى لأن location.origin على أندرويد "file://" مش "http" — أي فشل صامت دائم كان موجودًا من أول إطلاق تطبيق الأندرويد',
       'الحل: جسر أندرويد أصلي جديد (NabaTrackingBridge.kt، مسجَّل باسم window.NabaTracking) بنفس القيود الأمنية والمنطق حرفيًا مثل نسخة Rust — https فقط + مضيف app.sactracking.com بالتحديد + مسار /UCIC/api + بلا إعادة توجيه + مهلة 20 ثانية + حد 2 ميجابايت للرد',
@@ -20975,6 +21009,48 @@ function computeMaintenanceOptimization(){var f=computePredictiveFailureEngine()
         '</div>';
     }).join('');
   }
+
+  // 🛠️ تبويب المطور (v1، 2026-09-25) — قائمة خطوات مقترحة حقيقية، مبنية على مراجعة فعلية لحالة البرنامج
+  // فى جلسة العمل بتاريخ اليوم (فحص شامل لكل تكامل خارجي: Firebase/GPS/واتساب/الاستيراد الذكي/مزامنة
+  // الشبكة المحلية)، مش عناوين عامة أو أفكار افتراضية. كل بند: هيضيفلك ايه + إيه اللي محتاج منك بالظبط.
+  var DEVELOPER_ROADMAP = [
+    { status: 'يحتاج منك دقيقتين', title: '📱 اختبار واتساب بحساب Green API الحقيقي بتاعك', body: 'البنية والاتصال سليمين وتم اختبارهم فعليًا، لكن محتاجين بياناتك الحقيقية (رقم Instance والتوكن) وضغطة واحدة على "جلب أحدث الرسائل" فى صفحة "ربط واتساب" عشان نتأكد إن الرسائل بترجع فعلًا — مش حاجة أقدر أعملها من غيرك حفاظًا على أمان حسابك.' },
+    { status: 'يحتاج منك دقيقتين', title: '🛰️ تجربة تتبع GPS الحقيقي على تطبيق الأندرويد', body: 'اتصلح فعليًا (جسر اتصال جديد للأندرويد، وتم بناء APK ناجح والتحقق منه على GitHub) — الخطوة الأخيرة إنك تحمّل آخر نسخة APK وتجرّب التتبع اللحظي فعليًا على موبايلك عشان نقفل الملف ده بدليل استخدام حقيقي.' },
+    { status: 'قرار بسيط منك', title: '🗑️ حذف 4 ملفات شاردة من مجلد .github/workflows', body: 'وصلت هناك بالغلط فى جلسة سابقة (نسخة قديمة من package.json وملفات مشابهة) ومش بتأثر على شغل البرنامج، لكن الأفضل نظافتها. الحذف الآلي معطَّل هنا كإجراء أمان، فمحتاجة ضغطتين منك على GitHub (هبعتلك الروابط المباشرة).' },
+    { status: 'قرار بسيط منك', title: '🔌 مصير "المزامنة المباشرة عبر الواي فاي المحلي"', body: 'اتفحصت بعمق ولقيناها غير مفعَّلة فعليًا من الأساس (مش باج بسيط، الميزة كلها معطَّلة من ناحية الإرسال). النصيحة كخبير: ما نبنيهاش دلوقتي لأن مزامنة Firebase الحالية شغالة ومُختبَرة وبتغطي نفس الهدف (ربط اللابتوب بجهاز الشغل والموبايل)، وبناء ميزة تانية بنفس الغرض هيزود التعقيد من غير فايدة حقيقية. لو عندك سبب تاني (مثلاً مكان بلا إنترنت خالص) قولّي ونعيد التقييم.' },
+    { status: 'بحث إضافي مطلوب', title: '🧠 صيانة وقائية تنبؤية من بيانات الاستهلاك الفعلية', body: 'البرنامج عنده بالفعل محركات تحليل استهلاك وقود، وممكن نبني عليها تنبؤ بموعد الأعطال المتوقعة قبل حدوثها (بناءً على نمط الاستهلاك الفعلي لكل مركبة لا جدول صيانة ثابت) — ده تحسين حقيقي فى التكلفة والجاهزية، بس محتاج بيانات صيانة تاريخية كافية الأول عشان يكون دقيق، مش تخمين.' },
+    { status: 'تصميم أمان منفصل', title: '🔎 بحث تلقائي داخل البرنامج عن تحديثات وأدوات جديدة', body: 'ده الميزة اللي طلبتها فى وصف المشروع الأصلي (تبويب المطور يبحث بنفسه عن تحسينات). حاليًا بابحث أنا شخصيًا وقت ما تفتح جلسة معايا، لكن خليها تلقائية جوه البرنامج وهو شغال محتاج تصميم أمان دقيق (قائمة مواقع موثوقة محدودة، مراجعة قبل أي تفعيل) عشان ما نفتحش البرنامج لخطر حقيقي. لو موافق نبدأ نصمم الجزء ده بحذر كخطوة منفصلة.' }
+  ];
+  function renderDeveloperTab() {
+    var roadmapBox = $('#devTabRoadmap');
+    if (roadmapBox) {
+      roadmapBox.innerHTML = DEVELOPER_ROADMAP.map(function (r) {
+        return '<div class="card" data-naba-style="margin-bottom:8px;padding:10px;">' +
+          '<div data-naba-style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px;">' +
+          '<b>' + escapeHtml(r.title) + '</b>' +
+          '<span class="small-note" data-naba-style="color:var(--gold2);">' + escapeHtml(r.status) + '</span>' +
+          '</div>' +
+          '<p class="small-note" data-naba-style="margin:6px 0 0;">' + escapeHtml(r.body) + '</p>' +
+          '</div>';
+      }).join('');
+    }
+    var updatesBox = $('#devTabUpdates');
+    if (updatesBox) {
+      // ملاحظة: VERSION_LOG مُرتَّب أصلًا الأحدث أولًا (كل تحديث جديد يُضاف فى بداية المصفوفة) — بعكس
+      // renderVersionLog القديمة اللي بتعمل reverse() عشان تعرضه فى صفحة "أدوات مساعدة" بترتيب زمني تصاعدي.
+      // هنا محتاجين الأحدث فعلًا فى الأعلى زي ما موضّح فى نص الصفحة، فبنستخدم المصفوفة كما هي بلا reverse().
+      updatesBox.innerHTML = VERSION_LOG.map(function (entry) {
+        var heading = entry.title ? entry.title : (entry.items && entry.items[0] ? entry.items[0] : '');
+        var restItems = entry.title ? entry.items : (entry.items || []).slice(1);
+        return '<div data-naba-style="margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid var(--border);">' +
+          '<b data-naba-style="color:var(--gold2);">' + escapeHtml(entry.date) + '</b> — ' + escapeHtml(heading) +
+          (restItems && restItems.length ? '<ul data-naba-style="margin:4px 0 0;padding-inline-start:18px;">' + restItems.map(function (i) { return '<li>' + escapeHtml(i) + '</li>'; }).join('') + '</ul>' : '') +
+          '</div>';
+      }).join('');
+    }
+  }
+  window.renderDeveloperTab = renderDeveloperTab;
+  PAGE_RENDERERS.devtab = renderDeveloperTab;
 
   function setupToolsPage() {
     setupCalculator();
