@@ -1,5 +1,5 @@
 {
-  "version": "1.46.0",
-  "released_at": "2026-09-18",
-  "notes": "Certification integrity and trial gate hardening: exact runtime version evidence, fail-closed Windows certification, locked Rust dependency verification."
+  "version": "1.47.0",
+  "released_at": "2026-09-25",
+  "notes": "WhatsApp groups diagnostic (fetch real group list from Green API so the user can pick the correct group ID by name), Android GPS tracking bridge, Developer Tab, and local Wi-Fi sync retirement (superseded by working Firebase sync)."
 }
