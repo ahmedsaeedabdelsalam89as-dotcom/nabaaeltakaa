@@ -36,9 +36,12 @@ const ctx={window:{},NABA_AI_COMMAND_LAST_TEXT:'',console,escapeHtml:s=>String(s
 // المحدد لواجهة مركز الأوامر — نموذج مطابق تمامًا لسلوك window.NabaFleetAI.run المستخدم فعليًا فى التطبيق.
 ctx.runNabaAiCommand=cmd=>packets[cmd]||{ok:false,error:'unknown'};
 ctx.hydrateNabaCloudAiKey=async()=>{};
-ctx.nabaCloudAiKey=()=>''; // بدون مفتاح سحابي فى هذا الاختبار — لازم يرجع تحليل محلي حتمي بدل توقف
-ctx.nabaAiCloudModelSynthesisAny=async()=>({text:'CLOUD_STUB'});
-ctx.nabaLocalFallback=cmd=>'LOCAL_FALLBACK_ANALYSIS: '+cmd;
+ctx.hydrateNabaOpenAiKey=async()=>{};
+ctx.nabaCloudAiKey=()=>''; // بدون أي مفتاح سحابي فى هذا الاختبار — لازم يرجع تشخيص خطأ صريح (بدون رد محلي حتمي مضلِّل)
+ctx.nabaOpenAiKey=()=>'';
+// 🔒 2026-09-25: nabaLocalFallback أُلغي نهائيًا من الكود الحقيقي — هذا الاستدعاء يحاكي نفس رسالة "لا يوجد مفتاح"
+// التي يرميها nabaAiCloudModelSynthesisAny الحقيقي فعليًا عند غياب المفتاحين.
+ctx.nabaAiCloudModelSynthesisAny=async()=>{throw new Error('لا يوجد أي مفتاح ذكاء سحابي محفوظ (Claude أو OpenAI)');};
 vm.createContext(ctx);
 for(const n of ['setNabaCommand','nabaAiCompactValue','nabaAiCommandSummary','nabaAiSmartAnswer','runNabaCommandCenter','setAndRunNabaCommand']) vm.runInContext(extractFunction(n),ctx);
 
@@ -53,12 +56,14 @@ for(const cmd of Object.keys(packets)){
  assert(!els['#nabaCommandStatus'].textContent.includes('جارِ التنفيذ'),'status stuck executing: '+cmd);
 }
 
-// 🎙️ تأكيد الإصلاح الأساسي: أمر مفتوح غير مصنَّف لازم يرجع تحليل فعلي (محلي هنا، لعدم وجود مفتاح سحابي فى
-// الاختبار) — أبدًا رسالة "استخدم Naba AI Copilot الموجود أسفل مركز الأوامر" التي كانت تُوقِف المستخدم.
+// 🎙️ تأكيد الإصلاح الأساسي: أمر مفتوح غير مصنَّف لازم يحاول الاتصال السحابي فعليًا (مش يتوقف برسالة
+// "استخدم Naba AI Copilot")، ولو مفيش أي مفتاح محفوظ، يرجع تشخيص خطأ صريح — أبدًا رد محلي حتمي مضلِّل
+// (nabaLocalFallback أُلغي نهائيًا بطلب أحمد 2026-09-25).
 els['#nabaCommandInput'].value='';els['#nabaCommandStatus'].textContent='';els['#nabaCommandResult'].innerHTML='';
 await ctx.setAndRunNabaCommand(openEndedCommand);
-assert(els['#nabaCommandResult'].innerHTML.includes('LOCAL_FALLBACK_ANALYSIS'),'open-ended command did not route to smart fallback');
+assert(els['#nabaCommandResult'].innerHTML.includes('لا يوجد أي مفتاح ذكاء سحابي محفوظ'),'open-ended command with no key did not return the honest no-key diagnostic');
 assert(!els['#nabaCommandResult'].innerHTML.includes('استخدم Naba AI Copilot'),'open-ended command still dead-ends to the Copilot redirect message');
+assert(els['#nabaCommandStatus'].textContent.includes('تعذر الاتصال بالذكاء السحابي'),'status did not report the honest cloud-connection failure');
 
 if(!html.includes('id="nabaSelfTestBtn"') || !html.includes('function runNabaCertificationSelfTest()')) throw new Error('one-click NABA self-test missing');
 if(!html.includes("NABA SELF-TEST PASS") || !html.includes("command_center_self_test")) throw new Error('NABA self-test result/audit markers missing');
