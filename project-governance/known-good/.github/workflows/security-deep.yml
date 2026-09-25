@@ -40,8 +40,14 @@ jobs:
 
       - name: Locked Rust compile check
         run: cargo check --manifest-path src-tauri/Cargo.toml --locked
+      # RUSTSEC-2024-0429 (glib::VariantStrIter) مُستبعَد صراحةً: الإصلاح متاح فقط من glib 0.20+، لكن gtk-rs
+      # 0.18.2 (اعتماد غير مباشر ثابت عبر tauri/muda/tao/wry لبناء لينكس فقط) يقفل glib على ^0.18 — تأكدنا
+      # فعليًا (cargo tree -i glib) أنه لا يمكن رفعه بدون ترقية شجرة gtk-rs كاملة، وهى خطوة عالية الخطورة على
+      # منتج يُشحن فعليًا على ويندوز فقط، بلا أى وسيلة لاختبار واجهة GTK محليًا هنا. تأكدنا أيضًا أن كودنا لا
+      # يستخدم VariantStrIter/glib::Variant مباشرة. نفس العطل موجود ومفتوح بدون حل فى عشرات مشاريع Tauri
+      # الأخرى (بحث فعلى فى GitHub). هذا الاستبعاد الوحيد فى الأمر — أى ثغرة جديدة تظهر مستقبلاً ستوقف الفحص.
       - name: RustSec audit
         run: |
           cargo install cargo-audit --locked
-          cargo audit --file src-tauri/Cargo.lock
+          cargo audit --file src-tauri/Cargo.lock --ignore RUSTSEC-2024-0429
       - uses: github/codeql-action/analyze@v3
