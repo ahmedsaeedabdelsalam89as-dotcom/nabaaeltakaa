@@ -19442,14 +19442,60 @@ function computeMaintenanceOptimization(){var f=computePredictiveFailureEngine()
   }
   window.nabaGlobalVoiceActivate = nabaGlobalVoiceActivate;
 
-  function speakNabaCommandResult() {
+  // 🔊 2026-09-25: رد صوتي طبيعي حقيقي (لا الصوت الآلي الافتراضي لويندوز) — لما مفتاح OpenAI محفوظ، الرد
+  // يتحول لصوت TTS عصبي فعلي (نفس النوعية المستخدمة فى ChatGPT الصوتي) قبل ما يرجع لصوت الجهاز كاحتياط أخير
+  // فقط لو مفيش مفتاح أو فشل الاتصال — بحيث الصوت أبدًا ما يتوقف عن الرد.
+  var NABA_TTS_AUDIO_EL = null;
+  var NABA_TTS_VOICE = 'alloy';
+  var NABA_TTS_MODELS = ['gpt-4o-mini-tts', 'tts-1'];
+  async function nabaAiCloudSpeak(text, hooks) {
+    hooks = hooks || {};
+    text = String(text || '').trim();
+    if (!text) return false;
+    try { await hydrateNabaOpenAiKey(); } catch (_) { if (typeof console !== 'undefined' && console.warn) console.warn('[naba-silent-catch]', _ && _.message || _); }
+    var key = nabaOpenAiKey();
+    if (!key) return false;
+    var input = text.slice(0, 4000);
+    for (var i = 0; i < NABA_TTS_MODELS.length; i++) {
+      try {
+        var res = await fetchWithTimeout('https://api.openai.com/v1/audio/speech', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json', 'authorization': 'Bearer ' + key },
+          body: JSON.stringify({ model: NABA_TTS_MODELS[i], voice: NABA_TTS_VOICE, input: input, response_format: 'mp3',
+            instructions: 'تحدث بالعربية الفصحى الطبيعية بنبرة دافئة وواثقة وسريعة الإيقاع، وكأنك مساعد تنفيذي محترف يرد مباشرة وبدون تكلف.' })
+        }, 30000);
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        var blob = await res.blob();
+        if (!blob || !blob.size) throw new Error('رد صوتي فارغ');
+        var url = URL.createObjectURL(blob);
+        if (NABA_TTS_AUDIO_EL) { try { NABA_TTS_AUDIO_EL.pause(); if (NABA_TTS_AUDIO_EL.src) URL.revokeObjectURL(NABA_TTS_AUDIO_EL.src); } catch (_) { if (typeof console !== 'undefined' && console.warn) console.warn('[naba-silent-catch]', _ && _.message || _); } }
+        var audio = NABA_TTS_AUDIO_EL = new Audio(url);
+        audio.onplay = function () { if (hooks.onstart) hooks.onstart(); };
+        audio.onended = function () { try { URL.revokeObjectURL(url); } catch (_) { if (typeof console !== 'undefined' && console.warn) console.warn('[naba-silent-catch]', _ && _.message || _); } if (hooks.onend) hooks.onend(); };
+        audio.onerror = function () { try { URL.revokeObjectURL(url); } catch (_) { if (typeof console !== 'undefined' && console.warn) console.warn('[naba-silent-catch]', _ && _.message || _); } if (hooks.onerror) hooks.onerror(); };
+        await audio.play();
+        nabaAiUsageBump('externalCalls');
+        return true;
+      } catch (err) {
+        console.warn('[naba-tts-cloud]', NABA_TTS_MODELS[i], err && err.message || err);
+      }
+    }
+    return false;
+  }
+  window.nabaAiCloudSpeak = nabaAiCloudSpeak;
+
+  async function speakNabaCommandResult() {
     var status=$('#nabaCommandStatus');
     if (!NABA_AI_COMMAND_LAST_TEXT) { if(status) status.textContent='نفّذ أمرًا أولًا.'; return; }
-    if (!window.speechSynthesis || !window.SpeechSynthesisUtterance) { if(status) status.textContent='الرد الصوتي غير مدعوم في هذا الجهاز/المتصفح.'; return; }
+    if (status) status.textContent='🔊 جارِ تجهيز الرد الصوتي...';
+    var cloudOk=false;
+    try { cloudOk = await nabaAiCloudSpeak(NABA_AI_COMMAND_LAST_TEXT); } catch (_) { if (typeof console !== 'undefined' && console.warn) console.warn('[naba-silent-catch]', _ && _.message || _); }
+    if (cloudOk) { if(status) status.textContent='🔊 جارِ قراءة الرد (صوت طبيعي).'; return; }
+    if (!window.speechSynthesis || !window.SpeechSynthesisUtterance) { if(status) status.textContent='الرد الصوتي غير مدعوم في هذا الجهاز/المتصفح، ولا يوجد مفتاح OpenAI لصوت طبيعي بديل.'; return; }
     try {
       window.speechSynthesis.cancel();
       var u=new SpeechSynthesisUtterance(NABA_AI_COMMAND_LAST_TEXT); u.lang='ar-SA'; u.rate=1; window.speechSynthesis.speak(u);
-      if(status) status.textContent='🔊 جارِ قراءة الرد.';
+      if(status) status.textContent='🔊 جارِ قراءة الرد (صوت الجهاز الافتراضي — أضِف مفتاح OpenAI لصوت أعلى طبيعية).';
     } catch(err) { if(status) status.textContent='تعذر تشغيل الرد الصوتي: '+err.message; }
   }
 
@@ -19624,14 +19670,21 @@ function computeMaintenanceOptimization(){var f=computePredictiveFailureEngine()
   function nabaVoicePickVoice(locale){ var voices=window.speechSynthesis?window.speechSynthesis.getVoices():[]; return voices.find(function(v){return (v.lang||'').toLowerCase()===locale.toLowerCase();}) || voices.find(function(v){return /^ar/i.test(v.lang||'');}) || null; }
   function nabaVoiceReply(text){
     NABA_VOICE_STATE.lastReply=String(text||''); nabaVoiceUi(NABA_VOICE_STATE.active?'المحادثة الصوتية نشطة.':'الصوت جاهز.');
-    if(!nabaVoiceLoadConfig().autoSpeak || !window.speechSynthesis || !window.SpeechSynthesisUtterance) return text;
-    try{
-      if(NABA_VOICE_STATE.recognizer && NABA_VOICE_STATE.listening) NABA_VOICE_STATE.recognizer.stop();
-      window.speechSynthesis.cancel(); var u=new SpeechSynthesisUtterance(String(text||'')); var c=nabaVoiceLoadConfig(); u.lang=c.locale; var vv=nabaVoicePickVoice(c.locale); if(vv)u.voice=vv; u.rate=.98; u.pitch=1;
-      u.onstart=function(){NABA_VOICE_STATE.speaking=true;nabaVoiceUi('NABA بيرد دلوقتي…');};
-      u.onend=function(){NABA_VOICE_STATE.speaking=false;if(NABA_VOICE_STATE.active)nabaVoiceScheduleRestart(220);};
-      u.onerror=function(){NABA_VOICE_STATE.speaking=false;if(NABA_VOICE_STATE.active)nabaVoiceScheduleRestart(400);}; window.speechSynthesis.speak(u);
-    }catch(e){ if(NABA_VOICE_STATE.active)nabaVoiceScheduleRestart(300); }
+    if(!nabaVoiceLoadConfig().autoSpeak) return text;
+    if(NABA_VOICE_STATE.recognizer && NABA_VOICE_STATE.listening){ try{NABA_VOICE_STATE.recognizer.stop();}catch(_){ if (typeof console !== 'undefined' && console.warn) console.warn('[naba-silent-catch]', _ && _.message || _); } }
+    var onStart=function(){NABA_VOICE_STATE.speaking=true;nabaVoiceUi('NABA بيرد دلوقتي…');};
+    var onEnd=function(){NABA_VOICE_STATE.speaking=false;if(NABA_VOICE_STATE.active)nabaVoiceScheduleRestart(220);};
+    var onError=function(){NABA_VOICE_STATE.speaking=false;if(NABA_VOICE_STATE.active)nabaVoiceScheduleRestart(400);};
+    // 🔊 نجرب صوت طبيعي سحابي أولًا (مفتاح OpenAI)، ولو مفيش مفتاح أو فشل الاتصال نرجع فورًا لصوت الجهاز
+    // الافتراضي — نفس منطق speakNabaCommandResult، لكن هنا مربوط بدورة الاستماع/الإيقاف المستمرة.
+    nabaAiCloudSpeak(String(text||''),{onstart:onStart,onend:onEnd,onerror:onError}).then(function(cloudOk){
+      if(cloudOk) return;
+      if(!window.speechSynthesis || !window.SpeechSynthesisUtterance){ onEnd(); return; }
+      try{
+        window.speechSynthesis.cancel(); var u=new SpeechSynthesisUtterance(String(text||'')); var c=nabaVoiceLoadConfig(); u.lang=c.locale; var vv=nabaVoicePickVoice(c.locale); if(vv)u.voice=vv; u.rate=.98; u.pitch=1;
+        u.onstart=onStart; u.onend=onEnd; u.onerror=onError; window.speechSynthesis.speak(u);
+      }catch(e){ onError(); }
+    }).catch(function(){ onError(); });
     return text;
   }
   function nabaVoiceScheduleRestart(delay){ clearTimeout(NABA_VOICE_STATE.restartTimer); NABA_VOICE_STATE.restartTimer=setTimeout(function(){ if(NABA_VOICE_STATE.active&&!NABA_VOICE_STATE.speaking) nabaVoiceStartRecognition(); },delay||250); }
