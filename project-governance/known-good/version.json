@@ -1,5 +1,5 @@
 {
-  "version": "1.47.0",
-  "released_at": "2026-09-25",
-  "notes": "WhatsApp groups diagnostic (fetch real group list from Green API so the user can pick the correct group ID by name), Android GPS tracking bridge, Developer Tab, and local Wi-Fi sync retirement (superseded by working Firebase sync)."
+  "version": "1.48.0",
+  "released_at": "2026-09-26",
+  "notes": "Fixed a real bug where the voice assistant and command center only checked for a Claude key before attempting any cloud AI call, so an OpenAI-only setup silently fell back to a vague local analysis instead of calling OpenAI. The local fallback analysis was removed entirely per explicit request; a failed cloud connection now returns a clear, honest error instead. Also adds the first real correctness test suite for engine calculations (fuel intelligence, data logic validator) beyond structural/integrity checks."
 }
