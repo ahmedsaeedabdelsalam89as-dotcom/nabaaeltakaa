@@ -1479,13 +1479,14 @@ table tr:hover td{background:rgba(201,162,39,.06);}
       <h2 class="pagetitle">📱 ربط واتساب — إدارة الحركة والصيانة</h2>
       <div class="card">
         <b data-naba-style="color:var(--gold2);">⚙️ إعدادات الاتصال (Green API)</b>
-        <p class="small-note">يقرأ آخر رسائل جروب "إدارة الحركة والصيانة" ويصنّفها (بلاغ عطل / طلب سائق / توفير قطعة غيار) ويقترح ترحيلها للقسم المناسب، مع تحديد الإدارة/المشروع تلقائيًا من رقم اللوحة. <b>لا ترحيل تلقائي أبدًا — مراجعة وتأكيد لكل رسالة.</b> المفتاح يُخزَّن على جهازك فقط.</p>
+        <p class="small-note">يقرأ آخر رسائل أي عدد من الجروبات (مثال: إدارة الحركة + الصيانة والأعطال) ويصنّفها (بلاغ عطل / طلب سائق / توفير قطعة غيار) ويقترح ترحيلها للقسم المناسب، مع تحديد الإدارة/المشروع تلقائيًا من رقم اللوحة. <b>لا ترحيل تلقائي أبدًا — مراجعة وتأكيد لكل رسالة.</b> المفتاح يُخزَّن على جهازك فقط.</p>
         <div class="toolbar" data-naba-style="flex-wrap:wrap;">
           <input type="text" id="waApiUrl" placeholder="apiUrl (مثال: https://7105.api.greenapi.com)" data-naba-style="min-width:280px;" dir="ltr">
           <input type="text" id="waIdInstance" placeholder="idInstance" data-naba-style="min-width:150px;" dir="ltr">
           <input type="password" id="waApiToken" placeholder="apiTokenInstance" data-naba-style="min-width:200px;" autocomplete="off" dir="ltr">
-          <input type="text" id="waGroupChatId" placeholder="معرّف الجروب (مثال: 120363403529398741@g.us)" data-naba-style="min-width:280px;" dir="ltr">
         </div>
+        <p class="small-note" data-naba-style="margin-top:10px;">معرّفات الجروبات — جروب واحد فى كل سطر (مثال: 120363403529398741@g.us):</p>
+        <textarea id="waGroupChatIds" class="paste-box" rows="3" placeholder="120363403529398741@g.us&#10;120363404xxxxxxxxx@g.us" data-naba-style="width:100%;max-width:520px;" dir="ltr"></textarea>
         <div class="toolbar" data-naba-style="margin-top:8px;">
           <button type="button" class="btn primary" data-naba-onclick="saveWhatsAppSettings()">💾 حفظ الإعدادات</button>
           <button type="button" class="btn secondary" data-naba-onclick="fetchWhatsAppMessages()">🔄 جلب أحدث الرسائل</button>
@@ -10366,8 +10367,12 @@ function renderPredictiveDispatch(){
     try {
       var raw = localStorage.getItem(WA_SETTINGS_KEY), obj=raw?JSON.parse(raw):{};
       if(obj.apiToken){NABA_WA_TOKEN_CACHE=String(obj.apiToken);delete obj.apiToken;try{localStorage.setItem(WA_SETTINGS_KEY,JSON.stringify(obj));}catch (_) { if (typeof console !== 'undefined' && console.warn) console.warn('[naba-silent-catch]', _ && _.message || _); };nabaSecureSet('whatsapp_token',NABA_WA_TOKEN_CACHE).catch(function(){});}
-      return Object.assign({ apiUrl: '', idInstance: '', apiToken: NABA_WA_TOKEN_CACHE, groupChatId: '' },obj,{apiToken:NABA_WA_TOKEN_CACHE});
-    } catch (e) { return { apiUrl: '', idInstance: '', apiToken: NABA_WA_TOKEN_CACHE, groupChatId: '' }; }
+      // 🔁 2026-09-25: ترقية من جروب واحد (groupChatId نص) لعدة جروبات (groupChatIds مصفوفة) — أي إعداد
+      // قديم محفوظ من قبل يترقّى تلقائيًا هنا فى أول قراءة، من غير ما أحمد يعيد إدخال أي حاجة بنفسه.
+      var groupChatIds = Array.isArray(obj.groupChatIds) ? obj.groupChatIds.slice() : [];
+      if (!groupChatIds.length && obj.groupChatId) groupChatIds = [String(obj.groupChatId)];
+      return Object.assign({ apiUrl: '', idInstance: '', apiToken: NABA_WA_TOKEN_CACHE, groupChatIds: groupChatIds }, obj, { apiToken: NABA_WA_TOKEN_CACHE, groupChatIds: groupChatIds });
+    } catch (e) { return { apiUrl: '', idInstance: '', apiToken: NABA_WA_TOKEN_CACHE, groupChatIds: [] }; }
   }
   function saveWhatsAppSettingsToStorage(s) {
     var safe=Object.assign({},s);delete safe.apiToken;
@@ -10395,32 +10400,43 @@ function renderPredictiveDispatch(){
       var validHost = /^[a-z0-9-]+\.api\.greenapi\.com$/.test(host);
       if (u.protocol !== 'https:' || !validHost || (u.port && u.port !== '443') || u.username || u.password || (u.pathname && u.pathname !== '/') || u.search || u.hash) return {ok:false,message:'رابط Green API غير مسموح'};
       if (!/^\d{4,20}$/.test(String(s.idInstance || ''))) return {ok:false,message:'معرّف Instance غير صالح'};
-      if (!/^\d{5,30}@g\.us$/i.test(String(s.groupChatId || ''))) return {ok:false,message:'معرّف مجموعة واتساب غير صالح'};
+      var ids = Array.isArray(s.groupChatIds) ? s.groupChatIds : [];
+      if (!ids.length) return {ok:false,message:'أدخل معرّف جروب واحد على الأقل'};
+      var seen = {}, cleanIds = [];
+      for (var i = 0; i < ids.length; i++) {
+        var gid = String(ids[i] || '').trim();
+        if (!gid) continue;
+        if (!/^\d{5,30}@g\.us$/i.test(gid)) return {ok:false,message:'معرّف مجموعة واتساب غير صالح: ' + gid};
+        if (!seen[gid]) { seen[gid] = true; cleanIds.push(gid); }
+      }
+      if (!cleanIds.length) return {ok:false,message:'أدخل معرّف جروب واحد على الأقل'};
       if (String(s.apiToken || '').length < 8 || String(s.apiToken || '').length > 512) return {ok:false,message:'توكن Green API غير صالح'};
-      return {ok:true,apiUrl:u.origin};
+      return {ok:true,apiUrl:u.origin,groupChatIds:cleanIds};
     } catch (_) { return {ok:false,message:'رابط Green API غير صالح'}; }
   }
 
   async function saveWhatsAppSettings() {
+    var rawIds = ($('#waGroupChatIds') ? $('#waGroupChatIds').value : '').split(/\r?\n/).map(function(l){return fixReversedGroupChatId(l);}).filter(Boolean);
     var s = {
       apiUrl: ($('#waApiUrl').value || '').trim().replace(/\/+$/, ''),
       idInstance: ($('#waIdInstance').value || '').trim(),
       apiToken: ($('#waApiToken').value || '').trim() || NABA_WA_TOKEN_CACHE,
-      groupChatId: fixReversedGroupChatId($('#waGroupChatId').value)
+      groupChatIds: rawIds
     };
-    if (!s.apiUrl || !s.idInstance || !s.apiToken || !s.groupChatId) {
-      showToast('⚠ برجاء تعبئة كل الحقول الأربعة أولًا');
+    if (!s.apiUrl || !s.idInstance || !s.apiToken || !s.groupChatIds.length) {
+      showToast('⚠ برجاء تعبئة apiUrl وidInstance وapiTokenInstance ومعرّف جروب واحد على الأقل');
       return;
     }
     var waValidation = validateWhatsAppSettings(s);
     if (!waValidation.ok) { showToast('⚠ ' + waValidation.message); return; }
     s.apiUrl = waValidation.apiUrl;
+    s.groupChatIds = waValidation.groupChatIds;
     // نعرض القيمة المصحَّحة فورًا فى الصندوق نفسه حتى يرى المستخدم أنها اعتُمدت بالشكل الصحيح
-    if ($('#waGroupChatId')) $('#waGroupChatId').value = s.groupChatId;
+    if ($('#waGroupChatIds')) $('#waGroupChatIds').value = s.groupChatIds.join('\n');
     NABA_WA_TOKEN_CACHE=s.apiToken; try{await nabaSecureSet('whatsapp_token',s.apiToken);}catch(e){showToast('تعذر حفظ توكن واتساب بأمان: '+String(e&&e.message||e));return;}
     saveWhatsAppSettingsToStorage(s);
     if($('#waApiToken'))$('#waApiToken').value='';
-    showToast('✅ تم حفظ إعدادات واتساب والتوكن في التخزين الآمن');
+    showToast('✅ تم حفظ إعدادات واتساب والتوكن فى التخزين الآمن (' + s.groupChatIds.length + ' جروب)');
   }
   window.saveWhatsAppSettings = saveWhatsAppSettings;
 
@@ -10428,7 +10444,7 @@ function renderPredictiveDispatch(){
     var s = loadWhatsAppSettings();
     if ($('#waApiUrl')) $('#waApiUrl').value = s.apiUrl || '';
     if ($('#waIdInstance')) $('#waIdInstance').value = s.idInstance || '';
-    if ($('#waGroupChatId')) $('#waGroupChatId').value = s.groupChatId || '';
+    if ($('#waGroupChatIds')) $('#waGroupChatIds').value = (s.groupChatIds || []).join('\n');
     // التوكن لا يُعاد ملؤه تلقائيًا فى الصندوق لأسباب أمان بسيطة (يبقى محفوظًا ومُستخدَمًا داخليًا فقط)
   }
   window.renderWhatsAppOpsPage = renderWhatsAppOpsPage;
@@ -10450,18 +10466,30 @@ function renderPredictiveDispatch(){
   }
   var WA_TYPE_LABELS = { fault: '🔧 بلاغ عطل', spare_part: '📦 توفير قطعة غيار', driver_request: '🧑‍✈️ طلب سائق', other: '❓ غير مصنَّفة' };
 
-  function waFetchChatHistory(count) {
-    var s = loadWhatsAppSettings();
-    if (!s.apiUrl || !s.idInstance || !s.apiToken || !s.groupChatId) return Promise.reject(new Error('أكمل إعدادات الاتصال أولًا واحفظها'));
-    var waValidation = validateWhatsAppSettings(s);
-    if (!waValidation.ok) return Promise.reject(new Error(waValidation.message));
+  // 🔁 2026-09-25: بيجلب من كل جروب مضاف على حدة (وليس جروب واحد بس) ويدمج النتائج فى قايمة واحدة — كل
+  // رسالة بترجع من Green API ومعاها chatId بتاعها أصلًا، فمفيش لازمة نضيف وسم يدوي لمعرفة مصدرها.
+  function waFetchChatHistoryOne(waValidation, s, chatId, count) {
     var url = waValidation.apiUrl + '/waInstance' + encodeURIComponent(s.idInstance) + '/getChatHistory/' + encodeURIComponent(s.apiToken);
     return fetchWithTimeout(url, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ chatId: s.groupChatId, count: Math.max(1, Math.min(100, Number(count) || 50)) })
+      body: JSON.stringify({ chatId: chatId, count: Math.max(1, Math.min(100, Number(count) || 50)) })
     }, 12000).then(function (res) {
-      if (!res.ok) throw new Error('استجابة غير ناجحة (' + res.status + ')');
+      if (!res.ok) throw new Error('جروب ' + chatId + ': استجابة غير ناجحة (' + res.status + ')');
       return readResponseJsonBounded(res, 4 * 1024 * 1024);
+    });
+  }
+  function waFetchChatHistory(count) {
+    var s = loadWhatsAppSettings();
+    if (!s.apiUrl || !s.idInstance || !s.apiToken || !(s.groupChatIds && s.groupChatIds.length)) return Promise.reject(new Error('أكمل إعدادات الاتصال أولًا واحفظها'));
+    var waValidation = validateWhatsAppSettings(s);
+    if (!waValidation.ok) return Promise.reject(new Error(waValidation.message));
+    var errors = [];
+    return Promise.all(waValidation.groupChatIds.map(function (chatId) {
+      return waFetchChatHistoryOne(waValidation, s, chatId, count).catch(function (err) { errors.push(String(err && err.message || err)); return []; });
+    })).then(function (batches) {
+      var merged = [].concat.apply([], batches.map(function (b) { return Array.isArray(b) ? b : []; }));
+      if (errors.length) merged._waErrors = errors; // تشخيص اختياري: أي جروب فشل يُسجَّل هنا بدل ما يوقف الباقي
+      return merged;
     });
   }
 
@@ -10484,7 +10512,9 @@ function renderPredictiveDispatch(){
         typeCounts[key] = (typeCounts[key] || 0) + 1;
       });
       var breakdown = Object.keys(typeCounts).map(function (k) { return k + ': ' + typeCounts[k]; }).join(' | ');
-      if (status) status.innerHTML = '<b>توزيع أنواع آخر دفعة (تشخيص):</b><br>' + escapeHtml(breakdown);
+      var diagHtml = '<b>توزيع أنواع آخر دفعة (تشخيص):</b><br>' + escapeHtml(breakdown);
+      if (messages && messages._waErrors && messages._waErrors.length) diagHtml += '<br><b style="color:#c0392b;">⚠ تعذَّر الجلب من بعض الجروبات:</b><br>' + messages._waErrors.map(escapeHtml).join('<br>');
+      if (status) status.innerHTML = diagHtml;
       showToast('✅ تم جلب ' + textMessages.length + ' رسالة جديدة (من إجمالي ' + (messages || []).length + ' فى آخر دفعة)');
     }).catch(function (err) {
       if (status) status.textContent = '';
@@ -10504,8 +10534,9 @@ function renderPredictiveDispatch(){
       var v = plate ? getVehicleAny(plate) : null;
       var project = v ? projectForPlate(v.plate) : null;
       var dateStr = m.timestamp ? new Date(m.timestamp * 1000).toLocaleString('ar-EG') : '—';
+      var groupTag = m.chatId ? (' — جروب: ' + String(m.chatId).replace(/@g\.us$/i, '').slice(-6)) : '';
       return '<div class="card" data-naba-style="margin-bottom:8px;padding:10px;">' +
-        '<div class="small-note">' + escapeHtml(dateStr) + ' — ' + escapeHtml(m.senderName || m.senderContactName || 'غير معروف') + '</div>' +
+        '<div class="small-note">' + escapeHtml(dateStr) + ' — ' + escapeHtml(m.senderName || m.senderContactName || 'غير معروف') + escapeHtml(groupTag) + '</div>' +
         '<div data-naba-style="margin:6px 0;white-space:pre-wrap;">' + escapeHtml(text.slice(0, 400)) + '</div>' +
         '<div class="toolbar" data-naba-style="flex-wrap:wrap;">' +
         '<select id="waKind_' + idx + '">' + Object.keys(WA_TYPE_LABELS).map(function (k) { return '<option value="' + k + '"' + (k === kind ? ' selected' : '') + '>' + WA_TYPE_LABELS[k] + '</option>'; }).join('') + '</select>' +
