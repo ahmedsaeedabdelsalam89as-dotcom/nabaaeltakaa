@@ -3916,9 +3916,26 @@ return ctor.prototype=parent.prototype,child.prototype=new ctor,child.__super__=
   var FIREBASE_SYNC_PASSWORD_CACHE = '';
   var FIREBASE_AUTH_CACHE = null;
 
+  // جسر التخزين الآمن على أندرويد (NabaSecureBridge.kt، مسجَّل باسم window.NabaSecure) — يعادل وظيفيًا
+  // invoke() الخاص بـ Tauri على الويندوز، لكن بأوامر متزامنة (get/set/delete) بدل استدعاءات IPC غير
+  // متزامنة، لذلك نغلّفها هنا فى Promise بنفس الشكل تمامًا حتى لا يحتاج أى كود مستدعٍ لمعرفة الاختلاف.
+  function nabaSecureInvokeAndroid(command, payload) {
+    var name = payload && payload.name;
+    try {
+      if (command === 'secure_secret_get') return Promise.resolve(window.NabaSecure.get(name));
+      if (command === 'secure_secret_set') {
+        var ok = window.NabaSecure.set(name, String((payload && payload.value) || ''));
+        return ok ? Promise.resolve(true) : Promise.reject(new Error('secure_store_write_failed'));
+      }
+      if (command === 'secure_secret_delete') return Promise.resolve(window.NabaSecure.delete(name));
+      return Promise.reject(new Error('secure_store_unknown_command:' + command));
+    } catch (e) { return Promise.reject(e); }
+  }
+
   function nabaSecureInvoke(command, payload) {
     try {
       var inv = (window.__TAURI__ && window.__TAURI__.core && window.__TAURI__.core.invoke) || (window.__TAURI_INTERNALS__ && window.__TAURI_INTERNALS__.invoke);
+      if (!inv && window.NabaSecure) return nabaSecureInvokeAndroid(command, payload);
       if (!inv) return Promise.reject(new Error('secure_store_unavailable'));
       // إصلاح 2026-09-23: inv() كان أحيانًا لا يَحُل ولا يُرفَض أبدًا (تعليق صامت دائم لو تعطَّل الجانب الأصلي فى
       // Rust/مخزن Windows الآمن) — أي زر يعتمد عليه (مثل حفظ مفتاح Claude/OpenAI) كان يظل بلا أي رد فعل مرئي
@@ -20627,6 +20644,16 @@ function computeMaintenanceOptimization(){var f=computePredictiveFailureEngine()
   window.connectNabaEmailSession=connectNabaEmailSession;window.searchNabaEmail=searchNabaEmail;window.selectNabaEmail=selectNabaEmail;window.prepareNabaEmailReply=prepareNabaEmailReply;window.sendNabaEmailReply=sendNabaEmailReply;
   window.NabaEmailIntelligence={version:NABA_EMAIL_VERSION,deepContext:nabaEmailDeepContext,search:searchNabaEmail,prepareReply:prepareNabaEmailReply};
   var VERSION_LOG = [
+    {date:'2026-09-25',version:'1.46.0-android',title:'📱 تطبيق أندرويد أصلي جديد بالكامل (fleet-android/) — نفس واجهة الويندوز حرفيًا، ومزامنة Firebase موحدة بين اللابتوب وجهاز الشغل والموبايل',items:[
+      'لا يوجد مشروع أندرويد سابق فى المستودع لهذا التطبيق (نسخة APK قديمة وصلت من جلسة/أداة خارجية غير موثَّقة هنا) — بُني مشروع Kotlin/Gradle كامل من الصفر يغلّف نفس src/index.html فى WebView أصلي، بدل الاعتماد على نسخة منفصلة قد تنحرف عن نسخة الويندوز',
+      'scripts/sync-android-assets.mjs ينسخ src/index.html + src/modules + src/styles إلى assets التطبيق آليًا قبل كل بناء — src/ يبقى المصدر الحقيقى الوحيد لكلا التطبيقين، فلا يتكرر انحراف الإصدارات المكتشف سابقًا (نسخة موبايل أقدم بـ~3400 سطر عن نسخة الويندوز)',
+      'مزامنة البيانات بين الأجهزة الثلاثة (لابتوب + جهاز الشغل + الموبايل) عبر نفس آلية Firebase السحابية المُختبَرة أصلًا فى نسخة الويندوز (دمج آمن بمنطق ETag/if-match، بلا Last-Write-Wins) — تعمل تلقائيًا بمجرد إدخال نفس بيانات حساب المزامنة على الأجهزة الثلاثة',
+      'إصلاح جذري: التخزين الآمن (توكن واتساب، مفاتيح Claude/OpenAI، بيانات مزامنة Firebase) كان سيفشل بصمت على أندرويد لأن nabaSecureInvoke كان يعتمد حصرًا على Tauri invoke (ويندوز فقط) — أُضيف جسر NabaSecureBridge.kt (تشفير AES256-GCM عبر Android Keystore، مكافئ لـ Windows DPAPI) ومسار nabaSecureInvokeAndroid فى الكود المشترك',
+      'منتقى ملفات/كاميرا حقيقي لصفحات رفع المستندات (استمارات السيارات، بطاقات التشغيل، بطاقات السائقين) — التقاط صورة مباشرة أو اختيار من المعرض عبر FileProvider آمن',
+      '.github/workflows/build-android.yml يبني APK تلقائيًا فى كل تحديث (Gradle + Android SDK فى CI، لأن بيئة هذه الجلسة تمنع تحميل أدوات أندرويد) ويرفعه كمخرج جاهز للتنزيل والتثبيت',
+      'فحص ثابت جديد (scripts/fleet-android-smoke.mjs، ضمن npm run test:all) يمنع رجوعًا صامتًا: صلاحيات ناقصة، تخزين آمن معطَّل، أو انحراف معرّف التطبيق بين AndroidManifest وbuild.gradle',
+      'مسار "الاتصال المباشر عبر واي فاي محلي" (naba-lan-runtime.js) المكتشَف مسبقًا فى شيفرة سابقة تُرك كما هو دون تفعيل فى هذا التطبيق: تحققتُ من أن استقبال بيانات الموبايل جانب الويندوز (naba-windows-sync.js) لا يُطبِّقها فعليًا على بيانات الأسطول الحية بعد — إكماله خطوة منفصلة لاحقة، Firebase هو المسار الفعلي المعتمَد الآن'
+    ]},
     {date:'2026-09-25',version:'1.46.0-data',title:'🔗 دمج تصحيحات بيانات حقيقية من جلسات Cowork المتوازية (22-25 سبتمبر) — سواقين، مشروع أبها، مشاكل ترخيص (تحديث بيانات، مش إصدار برمجي جديد)',items:[
       'ملف "fleet_app_working.html" اللي كان بيتطور بالتوازي فى جلسات Cowork منفصلة (وصل لإصدار 1.71.0) اتفحص بند ببند، واتنقلت منه فقط التصحيحات المبنية على مستندات أو كشوف حقيقية رفعها أحمد فعليًا — مش أي كود تجريبي أو دوال تحليل جديدة (دي هتتقيّم لاحقًا على حدة عشان الريبو ده عنده بالفعل محرك ذكاء أكثر تطورًا NabaFleetAI)',
       '22 عربية اتصحح/اتكمل حقل السائق فيها بدليل مستندي حقيقي: منها 4 عربيات كان فيها اسم شركة ("نبع الطاقة" أو "شركة صالح...") بدل سائق حقيقي (نفس علة data-loading القديمة)، و7 عربيات من دفعة توثيق أبها (صور سائق+رخصة+إقامة)، و10 عربيات من كشف Excel رسمي (سواقين إيجار + سواقين على الكفالة) رفعه أحمد 2026-09-24',
