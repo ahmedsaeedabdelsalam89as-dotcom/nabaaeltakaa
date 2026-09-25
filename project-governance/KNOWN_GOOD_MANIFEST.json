@@ -1,11 +1,11 @@
 {
   "schema": 1,
   "project": "Naba Fleet System",
-  "createdAt": "2026-09-25T20:21:57.844Z",
+  "createdAt": "2026-09-25T20:30:19.943Z",
   "files": {
     "src/index.html": {
-      "sha256": "3a8b5e4dcd375841103604da036f3144ca654979bbf1da95f4e6214c902d50e0",
-      "size": 9488797
+      "sha256": "5684b5aaeefc12e1cb5498f1c5fcb430d3713efc5f726016c7b851a881d77852",
+      "size": 9491057
     },
     "PROJECT_RULES.md": {
       "sha256": "bd684a72b5f7e636dc2fd13cddeeca08467de287414478539c25983c58119390",
@@ -52,8 +52,8 @@
       "size": 323
     },
     "package.json": {
-      "sha256": "2a21ba7f5704bc3120a7831a5d7c8c097a755e9efa635692bc6a30554e9876ad",
-      "size": 2279
+      "sha256": "39eec6a03f462fefac412e089aad53f9e3cb99f63af306ec0caba74b4ecaf568",
+      "size": 2390
     },
     "package-lock.json": {
       "sha256": "d8d8c537d6acad8460dfdc13531520ce6294b5c27543930608ca8daa688d723b",
@@ -100,8 +100,8 @@
       "size": 3064
     },
     "scripts/naba-code-guardian.mjs": {
-      "sha256": "5a9a760bf2ed2e34eed8ab9940c2765e9de5701c35497115264fdb541f9e2a9c",
-      "size": 5010
+      "sha256": "e25cdb9b7001bbf506aedcaff2ddb14b2df93e4b6471199d804c1617ee097158",
+      "size": 5051
     },
     "scripts/preflight.mjs": {
       "sha256": "69b4d1ac3db06bcd13f9077dd2d447f31310b1ba30142403709acbd27d5d0592",
@@ -116,12 +116,16 @@
       "size": 7388
     },
     "scripts/guardian-selftest.mjs": {
-      "sha256": "9fb707ca29aafd51ffa117226b6ecf790d698fca5005e2413fef0fbc0bdb7038",
-      "size": 3774
+      "sha256": "9351b7b83313bf251c81ebe187885d584962e43f2c5015a11f19746d515bf769",
+      "size": 3815
     },
     "scripts/command-center-ui-smoke.mjs": {
       "sha256": "cc15509daa05c7da894845cdab042b628346c1e506aee3d4b8c8e9550718fa64",
       "size": 6713
+    },
+    "scripts/engine-correctness-suite.mjs": {
+      "sha256": "6cfb55785aea6f15f38037d149e8e8b6ee361bba795e439a23f05f40315fface",
+      "size": 11023
     },
     "scripts/android-static-smoke.mjs": {
       "sha256": "04695d3ea0aec2a63f17fab6f9788284ea830730985774bf23e053b9eb2bf1b3",
