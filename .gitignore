@@ -23,3 +23,13 @@ dist-ssr
 *.sln
 *.sw?
 updater_private_key.pem*
+
+# Android app (fleet-android/): يُبنى محليًا/فى CI عبر Gradle. ملفات assets تُنسَخ آليًا من src/ قبل كل
+# بناء (scripts/sync-android-assets.mjs) فلا داعٍ لتتبعها — المصدر الحقيقى الوحيد هو src/.
+fleet-android/app/src/main/assets/
+fleet-android/.gradle/
+fleet-android/build/
+fleet-android/app/build/
+fleet-android/local.properties
+fleet-android/*.iml
+fleet-android/.idea/

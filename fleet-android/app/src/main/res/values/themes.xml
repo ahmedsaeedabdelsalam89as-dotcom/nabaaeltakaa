@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.NabaFleet" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <item name="colorPrimary">@color/naba_navy</item>
+        <item name="colorPrimaryDark">@color/naba_navy</item>
+        <item name="colorAccent">@color/naba_gold</item>
+        <item name="android:statusBarColor">@color/naba_navy</item>
+        <item name="android:windowBackground">@color/naba_navy</item>
+    </style>
+</resources>

@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  يمنع أى اتصال HTTP غير مشفَّر افتراضيًا (نفس سياسة نسخة الويندوز). الاستثناء الوحيد هو نطاقات LAN
+  الخاصة (10.x / 172.16-31.x / 192.168.x) لمسار "الاكتشاف والمزامنة السريعة" مع كمبيوتر على نفس الشبكة —
+  هذا يطابق فحص privateHost() فى modules/naba-lan-runtime.js الذى يرفض أصلًا أى عنوان HTTP عام.
+-->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="false" />
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="true">10.0.0.0/8</domain>
+        <domain includeSubdomains="true">172.16.0.0/12</domain>
+        <domain includeSubdomains="true">192.168.0.0/16</domain>
+        <domain includeSubdomains="true">localhost</domain>
+        <domain includeSubdomains="true">127.0.0.1</domain>
+    </domain-config>
+</network-security-config>
