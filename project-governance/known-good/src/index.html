@@ -2870,7 +2870,10 @@ return ctor.prototype=parent.prototype,child.prototype=new ctor,child.__super__=
     // مجموعات الأرشفة والفهرسة فائقة الربط (أُضيفت 2026-09-21) — إدراجها هنا يُفعّل تلقائيًا:
     // 1) التحقق من سلامة الشكل عند كل حفظ (validateStateArraysShape) 2) تتبّع المزامنة بين الأجهزة (SYNC_TRACKED_ARRAYS)
     // بنفس منطق الدمج الثنائي العام (mergeOneSyncArray) دون أي كود إضافي خاص بها.
-    'SOURCE_DOCUMENT_CATALOG','DOCUMENT_AUDIT_LOG','DATA_INTEGRITY_FINDINGS','COMPANY_REGISTRY','DRIVERS_ARCHIVE','FLEET_ARCHIVE'
+    'SOURCE_DOCUMENT_CATALOG','DOCUMENT_AUDIT_LOG','DATA_INTEGRITY_FINDINGS','COMPANY_REGISTRY','DRIVERS_ARCHIVE','FLEET_ARCHIVE',
+    // قائمة اقتراحات ربط مستند-بسائق (مرحلة 2 — تطابق اسم ذكي محافظ) بانتظار مراجعة بشرية سريعة؛
+    // أُضيفت 2026-09-25 مع محرك nabaBackfillSourceDocumentLinks (راجع تعريفه لتفاصيل المنطق الكامل).
+    'DOCUMENT_LINK_SUGGESTIONS'
   ];
   function validateStateArraysShape(state, allowMissing) {
     if (!state || typeof state !== 'object' || Array.isArray(state)) return {ok:false,bad:['state']};
@@ -3415,6 +3418,7 @@ return ctor.prototype=parent.prototype,child.prototype=new ctor,child.__super__=
       COMPANY_REGISTRY: APP.COMPANY_REGISTRY,
       DRIVERS_ARCHIVE: APP.DRIVERS_ARCHIVE,
       FLEET_ARCHIVE: APP.FLEET_ARCHIVE,
+      DOCUMENT_LINK_SUGGESTIONS: APP.DOCUMENT_LINK_SUGGESTIONS,
       exportedAt: nowIso()
     };
   }
@@ -3550,6 +3554,9 @@ return ctor.prototype=parent.prototype,child.prototype=new ctor,child.__super__=
     APP.SOURCE_DOCUMENT_CATALOG = state.SOURCE_DOCUMENT_CATALOG || [];
     APP.DATA_INTEGRITY_FINDINGS = state.DATA_INTEGRITY_FINDINGS || [];
     APP.COMPANY_REGISTRY = state.COMPANY_REGISTRY || [];
+    // اقتراحات ربط مستند-بسائق (مرحلة 2 من محرك nabaBackfillSourceDocumentLinks) — راجع تعريف المحرك
+    // لتفاصيل كاملة؛ تُحفَظ هنا لتبقى المراجعات البشرية (قبول/رفض) محفوظة بين الجلسات ولا تتكرر.
+    APP.DOCUMENT_LINK_SUGGESTIONS = state.DOCUMENT_LINK_SUGGESTIONS || [];
     if (isFreshBundle) logActivity('تم تحميل البيانات الأساسية للنظام لأول مرة');
   }
 
@@ -3566,6 +3573,16 @@ return ctor.prototype=parent.prototype,child.prototype=new ctor,child.__super__=
       // إذا كان التخزين السابق غير قابل للقراءة، لا نكتب فوقه تلقائيًا؛ نحافظ عليه للاسترداد.
       if (!NABA_SAVED_STATE_PARSE_FAILED) { if (!saveState()) return; }
       else { NABA_STARTUP_REPAIR_CAN_PERSIST = false; nabaIncident('schema:startup','البيانات السابقة غير صالحة؛ أُوقف الحفظ التلقائي لحمايتها.'); }
+    }
+    // ربط مستندات الفهرس المصدري بالسائقين تلقائيًا (Idempotent — راجع تعريف المحرك لتفاصيل المنطق الكامل).
+    // يعمل عند كل تحميل حتى يُصلح نفسه ذاتيًا إذا أُضيفت مستندات/سائقون جدد لاحقًا؛ لا يعيد الحفظ إلا لو غيّر شيئًا فعليًا.
+    try {
+      var nabaDocLinkCounts = nabaBackfillSourceDocumentLinks();
+      if (nabaDocLinkCounts && (nabaDocLinkCounts.phase1 || nabaDocLinkCounts.phase1_5 || nabaDocLinkCounts.exact || nabaDocLinkCounts.suggest)) {
+        saveState();
+      }
+    } catch (nabaDocLinkErr) {
+      nabaIncident('doclink:backfill', 'تعذر تشغيل محرك ربط المستندات بالسائقين: ' + (nabaDocLinkErr && nabaDocLinkErr.message || nabaDocLinkErr));
     }
   }
 
@@ -11802,6 +11819,177 @@ function computeMaintenanceOptimization(){var f=computePredictiveFailureEngine()
   }
   window.logDocumentCorrection = logDocumentCorrection;
 
+  /* ---------------------------------------------------------------------
+     عقد المحرك (Engine Contract) — ربط مستندات الفهرس المصدري بالسائقين تلقائيًا
+     (Source Document → Driver Auto-Linking، أُضيف 2026-09-25 بناءً على طلب أحمد بتنظيم قاعدة
+     البيانات وربط السواقين بمستنداتهم الحقيقية بأقل تدخل بشري وبأعلى ثقة ممكنة)
+     المدخلات: APP.SOURCE_DOCUMENT_CATALOG (فهرس المستندات الخام)، APP.FLEET (لربط رقم اللوحة بالسائق
+     الحالي عليها)، APP.DRIVERS (وتحديدًا حقل _driver_card_source_note الذي يكتبه فحص بصري فعلي سابق
+     ويذكر فيه اسم الملف المصدري الذي استُخرجت منه بيانات بطاقة السائق يدويًا)
+     المخرجات: تعبئة doc.driver_ref على كل سجل أمكن ربطه بثقة كاملة، و APP.DOCUMENT_LINK_SUGGESTIONS
+     للحالات المحتملة غير المؤكدة (طبقة "اقتراح" تحتاج تأكيدًا بشريًا سريعًا من شاشة صغيرة، وليس مراجعة
+     بصرية لكل الفهرس)
+     الافتراضات: Idempotent بالكامل (يُشغَّل عند كل تحميل، آمن التكرار) — لا يكتب أبدًا فوق driver_ref
+     موجود مسبقًا (يدوي أو من تشغيل سابق)، ولا يكرر اقتراحًا لمستند له اقتراح سابق (سواء لا يزال معلّقًا
+     أو رُوجع بالفعل قبولًا/رفضًا من المستخدم). كل ربط تلقائي (مرحلة 1 أو 1.5 أو 2-EXACT) يُسجَّل كسطر فى
+     DOCUMENT_AUDIT_LOG (نفس آلية logDocumentCorrection المستخدمة أصلًا لتصحيحات بيانات المركبات) حتى
+     يبقى كل ربط قابلًا للتتبع الكامل: من ربطه، متى، وعلى أي أساس بالضبط.
+     المراحل (كل مرحلة تُطبَّق فقط إن فشلت التي قبلها، بالترتيب من الأعلى ثقة للأقل):
+     1) رقم اللوحة (حتمية 100%، صفر تخمين): إن كان للمستند حقل plate ولهذه اللوحة سائق مسجَّل حاليًا فى
+        FLEET.driver — هذا العدد الأكبر والأضمن (145 مستندًا وقت الكتابة).
+     1.5) ملاحظة السائق نفسها (حتمية 100%، ليست تخمينًا): بعض السائقين لديهم _driver_card_source_note من
+        فحص بصري فعلي سابق يذكر بالنص اسم ملف بطاقتهم — إن طابق اسم الملف نفسه سجلًا فى الفهرس، فهذا مصدر
+        حقيقي موثَّق مسبقًا وليس تخمين نص (23 مستندًا وقت الكتابة).
+     2) مطابقة اسم ذكية محافظة (Jaccard token overlap بين اسم السائق واسم الملف بعد تطبيع عربي كامل —
+        إزالة تشكيل/تطبيع ألف وياء وتاء مربوطة، وحذف كلمات حشو مثل "بطاقة"/"سائق"/"مهنية"): تُطبَّق فقط
+        على فئات مستندات هوية السائق (بطاقات السائقين، رخصة قيادة سائق، هوية مقيم سائق). طبقة EXACT تُطبَّق
+        تلقائيًا (تغطية كاملة لكل كلمات اسم السائق + تشابه ≥ 0.5 + فارق ≥ 0.15 عن ثاني أقرب مرشّح — عتبات
+        محافظة عمدًا بعد اكتشاف حالة مطابقة زائفة فى الاختبار: اسم قصير عام كان يطابق بالخطأ اسم ملف أطول
+        يحوي نفس الكلمات الشائعة بالصدفة)، وطبقة SUGGEST فقط للمراجعة (تشابه ≥ 0.35 + فارق ≥ 0.1).
+     ما لا يفعله هذا المحرك (بصراحة كاملة): لا يقرأ محتوى الصور/PDF نفسها (لا OCR فعلي لأرقام الشاسيه أو
+     الهوية فى هذا الإصدار) — المطابقة كلها عبر رقم اللوحة المسجَّل مسبقًا أو اسم الملف نفسه، وليس عبر
+     قراءة بصرية جديدة للمستند. أي مطابقة برقم شاسيه/هوية فعلية تتطلب الوصول لملفات الصور الأصلية وتحليلها.
+     --------------------------------------------------------------------- */
+  var NABA_DOC_LINK_DRIVER_CATEGORIES = ['بطاقات السائقين', 'رخصة قيادة سائق', 'هوية مقيم سائق', 'رخصة قيادة سائق (نقل ثقيل)'];
+  var NABA_DOC_LINK_FILLER_WORDS = { 'بطاقة': 1, 'سائق': 1, 'مهنية': 1, 'مؤقتة': 1, 'رخصة': 1, 'قيادة': 1, 'هوية': 1, 'مقيم': 1, 'نقل': 1, 'ثقيل': 1, 'صوره': 1, 'صورة': 1, 'copy': 1, 'scan': 1 };
+  function nabaDocLinkTokens(s) {
+    if (!s) return [];
+    var t = String(s).replace(/\.[a-zA-Z0-9]+$/, '');
+    t = t.replace(/[ً-ْٰـ]/g, '');
+    t = t.replace(/[إأآا]/g, 'ا').replace(/ى/g, 'ي').replace(/ة/g, 'ه').replace(/ؤ/g, 'و').replace(/ئ/g, 'ي');
+    t = t.replace(/[^؀-ۿ\s]/g, ' ');
+    t = t.toLowerCase();
+    return t.split(/\s+/).filter(function (w) { return w && !NABA_DOC_LINK_FILLER_WORDS[w]; });
+  }
+  function nabaDocLinkJaccard(driverName, filename) {
+    var dt = nabaDocLinkTokens(driverName), ft = nabaDocLinkTokens(filename);
+    var dSet = {}, fSet = {};
+    dt.forEach(function (w) { dSet[w] = 1; });
+    ft.forEach(function (w) { fSet[w] = 1; });
+    var dKeys = Object.keys(dSet), fKeys = Object.keys(fSet);
+    if (!dKeys.length || !fKeys.length) return { jac: 0, fullCover: false };
+    var inter = 0;
+    dKeys.forEach(function (w) { if (fSet[w]) inter++; });
+    var unionSet = {};
+    dKeys.concat(fKeys).forEach(function (w) { unionSet[w] = 1; });
+    var jac = inter / Object.keys(unionSet).length;
+    var fullCover = dKeys.every(function (w) { return fSet[w]; });
+    return { jac: jac, fullCover: fullCover };
+  }
+  function nabaDocLinkMatchDriver(filename, drivers) {
+    var scored = drivers.map(function (d) {
+      var r = nabaDocLinkJaccard(d.name, filename);
+      return { driver: d.name, jac: r.jac, fullCover: r.fullCover };
+    }).sort(function (a, b) { return b.jac - a.jac; });
+    var best = scored[0], second = scored[1] || { jac: 0 };
+    if (!best || best.jac === 0) return { tier: 'none' };
+    var margin = best.jac - second.jac;
+    if (best.fullCover && best.jac >= 0.5 && margin >= 0.15) return { tier: 'exact', driver: best.driver, score: best.jac };
+    if (best.jac >= 0.35 && margin >= 0.1) return { tier: 'suggest', driver: best.driver, score: best.jac };
+    return { tier: 'none' };
+  }
+  function nabaBackfillSourceDocumentLinks() {
+    var docs = APP.SOURCE_DOCUMENT_CATALOG || [];
+    var fleet = APP.FLEET || [];
+    var drivers = APP.DRIVERS || [];
+    var counts = { phase1: 0, phase1_5: 0, exact: 0, suggest: 0 };
+    if (!docs.length || !drivers.length) return counts;
+
+    // FLEET.driver أحيانًا يحمل اسم سائق بصياغة مختلفة عن APP.DRIVERS.name (أو legacy_names القديم المسجَّل
+    // على نفس السائق)، وأحيانًا يحمل اسم جهة/مقاول وليس سائقًا مسجَّلاً فى قاعدة الموارد البشرية إطلاقًا —
+    // هذا اكتشاف حقيقي أثناء بناء هذا المحرك (52 من 145 قيمة FLEET.driver لا تطابق نصيًا أي DRIVERS.name).
+    // نحاول أولًا إيجاد الاسم القانوني (canonical) فى DRIVERS قبل الربط؛ إن لم نجد مطابقة، نُبقي القيمة
+    // الخام كما هي (صحيحة كبيانات مركبة، لكنها ببساطة لن تظهر تحت صفحة سائق لأنه لا يوجد سائق مسجَّل بهذا الاسم).
+    function nabaDocLinkCanonicalDriverName(rawName) {
+      if (!rawName) return null;
+      var norm = normalizeArabicNameLite(rawName);
+      for (var i = 0; i < drivers.length; i++) {
+        if (normalizeArabicNameLite(drivers[i].name) === norm) return drivers[i].name;
+        var legacy = drivers[i].legacy_names || [];
+        for (var j = 0; j < legacy.length; j++) { if (normalizeArabicNameLite(legacy[j]) === norm) return drivers[i].name; }
+      }
+      return null;
+    }
+    var plateToDriver = {};
+    fleet.forEach(function (v) {
+      if (v.plate && v.driver) plateToDriver[String(v.plate).trim()] = nabaDocLinkCanonicalDriverName(v.driver) || v.driver;
+    });
+
+    var noteFilenameToDriver = {};
+    drivers.forEach(function (d) {
+      if (!d._driver_card_source_note) return;
+      var m = String(d._driver_card_source_note).match(/\(([^)]+\.(?:pdf|jpg|jpeg|png))\)/i);
+      if (m) noteFilenameToDriver[m[1]] = d.name;
+    });
+
+    APP.DOCUMENT_LINK_SUGGESTIONS = APP.DOCUMENT_LINK_SUGGESTIONS || [];
+    var existingSuggestionDocIds = {};
+    APP.DOCUMENT_LINK_SUGGESTIONS.forEach(function (s) { existingSuggestionDocIds[s.doc_id] = true; });
+
+    docs.forEach(function (doc) {
+      if (doc.driver_ref) return; // لا نكتب أبدًا فوق ربط موجود (يدوي أو من تشغيل سابق)
+
+      if (doc.plate) {
+        var byPlate = plateToDriver[String(doc.plate).trim()];
+        if (byPlate) {
+          doc.driver_ref = byPlate;
+          doc._driver_ref_source = 'plate_match';
+          counts.phase1++;
+          logDocumentCorrection({ plate: doc.plate, field: 'driver_ref', field_label: 'السائق المرتبط بالمستند', old_value: '', new_value: byPlate, doc_type: 'source_document', doc_type_label: 'مستند مصدري (ربط تلقائي برقم اللوحة)', source_file: doc.filename });
+          return;
+        }
+      }
+
+      if (noteFilenameToDriver[doc.filename]) {
+        doc.driver_ref = noteFilenameToDriver[doc.filename];
+        doc._driver_ref_source = 'driver_note_match';
+        counts.phase1_5++;
+        logDocumentCorrection({ plate: '', field: 'driver_ref', field_label: 'السائق المرتبط بالمستند', old_value: '', new_value: doc.driver_ref, doc_type: 'source_document', doc_type_label: 'مستند مصدري (ربط تلقائي من ملاحظة فحص بصري سابقة)', source_file: doc.filename });
+        return;
+      }
+
+      if (NABA_DOC_LINK_DRIVER_CATEGORIES.indexOf(doc.category) === -1) return;
+      if (existingSuggestionDocIds[doc.id]) return; // مستند له اقتراح سابق (معلّق أو رُوجع) — لا نكرره
+
+      var match = nabaDocLinkMatchDriver(doc.filename, drivers);
+      if (match.tier === 'exact') {
+        doc.driver_ref = match.driver;
+        doc._driver_ref_source = 'fuzzy_exact_' + match.score.toFixed(2);
+        counts.exact++;
+        logDocumentCorrection({ plate: '', field: 'driver_ref', field_label: 'السائق المرتبط بالمستند', old_value: '', new_value: match.driver, doc_type: 'source_document', doc_type_label: 'مستند مصدري (ربط تلقائي بمطابقة اسم ذكية — تشابه ' + (match.score * 100).toFixed(0) + '%)', source_file: doc.filename });
+      } else if (match.tier === 'suggest') {
+        APP.DOCUMENT_LINK_SUGGESTIONS.push({
+          id: 'SUG-' + (APP.DOCUMENT_LINK_SUGGESTIONS.length + 1).toString().padStart(4, '0'),
+          doc_id: doc.id, filename: doc.filename, category: doc.category,
+          suggested_driver: match.driver, score: match.score, status: 'pending', created_at: nowIso()
+        });
+        existingSuggestionDocIds[doc.id] = true;
+        counts.suggest++;
+      }
+    });
+    return counts;
+  }
+  function nabaResolveDocumentLinkSuggestion(suggestionId, accept) {
+    var list = APP.DOCUMENT_LINK_SUGGESTIONS || [];
+    var s = list.find(function (x) { return x.id === suggestionId; });
+    if (!s) return;
+    if (accept) {
+      var doc = (APP.SOURCE_DOCUMENT_CATALOG || []).find(function (x) { return x.id === s.doc_id; });
+      if (doc && !doc.driver_ref) {
+        doc.driver_ref = s.suggested_driver;
+        doc._driver_ref_source = 'fuzzy_suggest_confirmed_' + s.score.toFixed(2);
+        logDocumentCorrection({ plate: '', field: 'driver_ref', field_label: 'السائق المرتبط بالمستند', old_value: '', new_value: s.suggested_driver, doc_type: 'source_document', doc_type_label: 'مستند مصدري (ربط بعد تأكيد بشري لاقتراح مطابقة اسم)', source_file: s.filename });
+      }
+      s.status = 'accepted';
+    } else {
+      s.status = 'rejected';
+    }
+    s.resolved_at = nowIso();
+    saveState();
+  }
+  window.nabaBackfillSourceDocumentLinks = nabaBackfillSourceDocumentLinks;
+  window.nabaResolveDocumentLinkSuggestion = nabaResolveDocumentLinkSuggestion;
+
   function renderDocumentAuditPage() {
     var log = (APP.DOCUMENT_AUDIT_LOG || []).slice().reverse(); // الأحدث أولًا
     var filterEl = $('#docAuditFilterPlate');
@@ -12651,6 +12839,41 @@ function computeMaintenanceOptimization(){var f=computePredictiveFailureEngine()
     } else html += '<p class="small-note" data-naba-style="margin-top:8px;">لا توجد مستندات مرتبطة بهذا السائق بعد.</p>';
     html += '</div>';
 
+    // فهرس المستندات المصدري (SOURCE_DOCUMENT_CATALOG) — مراجع حقيقية من حصر السيارات/السائقين الأصلي،
+    // رُبطت تلقائيًا (راجع nabaBackfillSourceDocumentLinks) لكنها مرجعية فقط: لا تحوي صورة داخل البرنامج،
+    // الملف الفعلي محفوظ خارج البرنامج كما هو موضح فى عمود "المكان" — بخلاف قسم "مكتبة مستندات السائق"
+    // أعلاه الذي يعرض صورًا مرفوعة فعليًا. هذا القسم صادق فى عرض حدوده حتى لا يوهم بوجود صورة غير موجودة.
+    var driverSourceDocs = (APP.SOURCE_DOCUMENT_CATALOG || []).filter(function (doc) {
+      return doc.driver_ref && normalizeArabicNameLite(doc.driver_ref) === normalizeArabicNameLite(name);
+    });
+    html += '<div class="card" data-naba-style="margin-top:14px;"><b data-naba-style="color:var(--gold2);"><span class="icon-glass">🗂️</span> مستندات مرجعية من فهرس الحصر الأصلي (' + driverSourceDocs.length + ')</b>';
+    html += '<p class="small-note" data-naba-style="margin-top:6px;">مراجع فقط (بدون صورة داخل البرنامج) — الملفات الفعلية محفوظة خارج البرنامج كما فى عمود "المكان". لعرض الصورة نفسها داخل البرنامج ارفعها من زر "رفع مستند للسائق" أعلاه.</p>';
+    if (driverSourceDocs.length) {
+      html += '<div class="table-wrap" data-naba-style="max-height:220px;margin-top:8px;"><table><thead><tr><th>الملف</th><th>الفئة</th><th>طريقة الربط</th><th>المكان</th></tr></thead><tbody>' +
+        driverSourceDocs.map(function (doc) {
+          var srcVal = doc._driver_ref_source || '';
+          var srcLabel = srcVal === 'plate_match' ? 'رقم اللوحة' : srcVal === 'driver_note_match' ? 'فحص بصري سابق موثّق' : srcVal.indexOf('fuzzy') === 0 ? 'مطابقة اسم ذكية' : '—';
+          return '<tr><td>' + escapeHtml(doc.filename) + '</td><td>' + escapeHtml(doc.category || '—') + '</td><td>' + escapeHtml(srcLabel) + '</td><td>' + escapeHtml(doc.note || doc.rel_path || '—') + '</td></tr>';
+        }).join('') + '</tbody></table></div>';
+    } else html += '<p class="small-note" data-naba-style="margin-top:8px;">لا توجد مستندات مرجعية مربوطة من فهرس الحصر الأصلي بعد.</p>';
+    html += '</div>';
+
+    // اقتراحات ربط بانتظار تأكيد بشري تخص هذا السائق تحديدًا (مرحلة 2-SUGGEST) — طابور صغير جدًا لكل سائق،
+    // وليس مراجعة بصرية لكل الفهرس كما كان مطلوبًا فى الفكرة الأولى — هذا بالضبط ما طلبه أحمد: أقل تدخل بشري.
+    var driverPendingSuggestions = (APP.DOCUMENT_LINK_SUGGESTIONS || []).filter(function (s) {
+      return s.status === 'pending' && normalizeArabicNameLite(s.suggested_driver) === normalizeArabicNameLite(name);
+    });
+    if (driverPendingSuggestions.length) {
+      html += '<div class="card" data-naba-style="margin-top:14px;border-color:var(--gold2);"><b data-naba-style="color:var(--gold2);"><span class="icon-glass">🔎</span> اقتراحات ربط تحتاج تأكيدك (' + driverPendingSuggestions.length + ')</b>';
+      html += '<p class="small-note" data-naba-style="margin-top:6px;">تطابق اسم محتمل غير مؤكد 100% — راجع اسم الملف وأكّد أو ارفض.</p>';
+      html += '<div class="table-wrap" data-naba-style="margin-top:8px;"><table><thead><tr><th>الملف</th><th>نسبة التشابه</th><th>إجراء</th></tr></thead><tbody>' +
+        driverPendingSuggestions.map(function (s) {
+          return '<tr><td>' + escapeHtml(s.filename) + '</td><td>' + Math.round(s.score * 100) + '%</td><td>' +
+            '<button class="btn secondary doclink-accept-btn" type="button" data-sug="' + escapeHtml(s.id) + '">✅ تأكيد</button> ' +
+            '<button class="btn danger doclink-reject-btn" type="button" data-sug="' + escapeHtml(s.id) + '">❌ رفض</button></td></tr>';
+        }).join('') + '</tbody></table></div></div>';
+    }
+
     container.innerHTML = html;
 
     var editDriverBtn = document.getElementById('editDriverDetailBtn');
@@ -12663,6 +12886,12 @@ function computeMaintenanceOptimization(){var f=computePredictiveFailureEngine()
     if (deleteDriverBtn) deleteDriverBtn.addEventListener('click', function () { deleteDriver(deleteDriverBtn.dataset.name); });
     $all('.drv-plate-link', container).forEach(function (el) {
       el.addEventListener('click', function () { navigateToVehicle(el.dataset.plate); });
+    });
+    $all('.doclink-accept-btn', container).forEach(function (btn) {
+      btn.addEventListener('click', function () { nabaResolveDocumentLinkSuggestion(btn.dataset.sug, true); renderDriverDetail(name); });
+    });
+    $all('.doclink-reject-btn', container).forEach(function (btn) {
+      btn.addEventListener('click', function () { nabaResolveDocumentLinkSuggestion(btn.dataset.sug, false); renderDriverDetail(name); });
     });
   }
   window.renderDriverDetail = renderDriverDetail;
@@ -20799,6 +21028,12 @@ function computeMaintenanceOptimization(){var f=computePredictiveFailureEngine()
   window.connectNabaEmailSession=connectNabaEmailSession;window.searchNabaEmail=searchNabaEmail;window.selectNabaEmail=selectNabaEmail;window.prepareNabaEmailReply=prepareNabaEmailReply;window.sendNabaEmailReply=sendNabaEmailReply;
   window.NabaEmailIntelligence={version:NABA_EMAIL_VERSION,deepContext:nabaEmailDeepContext,search:searchNabaEmail,prepareReply:prepareNabaEmailReply};
   var VERSION_LOG = [
+    {date:'2026-09-25',version:'1.47.0-doclink-driver-source-catalog',title:'🗂️ ربط تلقائي فائق الذكاء بين فهرس المستندات المصدري (917 مستندًا) والسائقين',items:[
+      'محرك جديد nabaBackfillSourceDocumentLinks يعمل تلقائيًا عند كل تحميل (Idempotent — آمن التكرار، يصلح نفسه ذاتيًا مع أي مستندات/سواقين جدد لاحقًا): يربط SOURCE_DOCUMENT_CATALOG بالسائقين على 3 مراحل بترتيب الثقة: (1) رقم اللوحة → 140 مستندًا جديدًا (زائد 5 مربوطة يدويًا مسبقًا)، (2) ملاحظة فحص بصري سابقة موثّقة فعليًا فى بيانات السائق نفسه (_driver_card_source_note) → 23 مستندًا، (3) مطابقة اسم ذكية محافظة (Jaccard) لفئات بطاقات/رخص/هويات السائقين فقط → مستند واحد بثقة عالية تلقائيًا + اقتراح واحد فقط محفوظ للمراجعة البشرية (وليس مراجعة كل الفهرس يدويًا).',
+      'إصلاح إضافي حقيقي اكتُشف أثناء البناء: 52 من أصل 145 قيمة FLEET.driver لا تطابق نصيًا أي اسم فى APP.DRIVERS (بعضها اسم شركة/مقاول فعلي، وبعضها نفس السائق بصياغة مختلفة قليلًا) — أُضيفت دالة تحليل تطابق قانوني (canonical) تبحث فى legacy_names أيضًا قبل الربط، فحلّت جزءًا من هذه الحالات فعليًا (مثال محقَّق: "قيصر علي سياي غلاب شاه" فى المركبة ↔ "قيصر علي شاه" فى DRIVERS أصبحا يُربَطان بنجاح الآن).',
+      'صفحة تفاصيل كل سائق (renderDriverDetail) أصبحت تعرض قسمًا جديدًا صادقًا فى حدوده: "مستندات مرجعية من فهرس الحصر الأصلي" — يوضح صراحة أنها مراجع فقط (اسم الملف/الفئة/طريقة الربط/مكان الحفظ الفعلي) وليست صورًا مرفوعة داخل البرنامج، تمييزًا واضحًا عن قسم "مكتبة مستندات السائق" (الصور الفعلية المرفوعة).',
+      'تحقُّق فعلي عبر Chromium حقيقي (Playwright) على البيانات الحية: 173 مستندًا أصبح لها driver_ref (86 منها يطابق سائقًا مسجَّلاً حاليًا فعليًا فى APP.DRIVERS فيظهر على صفحته، والباقي أسماء شركات/مقاولين أو سائقين غير مسجَّلين فى قاعدة الموارد البشرية الحالية — بيانات صحيحة لكن لا تخص سائقًا له صفحة)، صفر أخطاء Runtime.'
+    ]},
     {date:'2026-09-25',version:'1.47.0',title:'🔖 إصدار رسمي جديد 1.47.0 — عشان يظهر إشعار "تحديث متاح" على جهازك',items:[
       'السبب: كل تعديلات النهارده (تبويب المطور، إغلاق مزامنة الواي فاي، قايمة الجروبات الحقيقية للواتساب، إصلاح GPS الأندرويد) كانت بتتحفظ على GitHub لكن رقم الإصدار فضل 1.46.0 — يعني برنامجك المثبَّت على جهازك ما كانش هيشوف أي تحديث جديد أبدًا، حتى لو الكود اتغيَّر فعليًا، لأن نظام التحديث بيقارن بالأرقام بس',
       'الحل: رفع الرقم فعليًا لـ1.47.0 فى كل الملفات المرتبطة (package.json، tauri.conf.json، version.json، Cargo.toml/lock) + تحديث كل فحوصات الحوكمة المرتبطة بيهم (preflight، runtime-truth، remote-exec-policy، workspace-smoke) بنفس الانضباط المتّبع فى كل إصدار سابق بهذا المشروع',
