@@ -1,11 +1,11 @@
 {
   "schema": 1,
   "project": "Naba Fleet System",
-  "createdAt": "2026-09-25T21:06:50.716Z",
+  "createdAt": "2026-09-25T21:31:03.634Z",
   "files": {
     "src/index.html": {
-      "sha256": "2c7e4986d56425646ef92469ae8134c09c84ec2cd22c8b02774d6223739f615d",
-      "size": 9492880
+      "sha256": "a1274c41f8dcaf0c57b327e9ff08cceeaf8da8c97efa4b588da45b13d633ad6f",
+      "size": 9501015
     },
     "PROJECT_RULES.md": {
       "sha256": "bd684a72b5f7e636dc2fd13cddeeca08467de287414478539c25983c58119390",
@@ -32,16 +32,16 @@
       "size": 188
     },
     "src-tauri/Cargo.toml": {
-      "sha256": "54f2e3760d46a7539ab27926f48dc33198378433863d9ad2c8e212ff0ee22070",
+      "sha256": "e3b4445c615163f944a1637f96e3132b509311540f36525bee618f849f2888e5",
       "size": 1775
     },
     "src-tauri/Cargo.lock": {
-      "sha256": "211d7d6d2efff4bef05ec239c5ad7170910d12b519653950a26796ce3c8dc393",
+      "sha256": "db7cd3ea9be41f514874f79c7380b941154851e482bd4a11d00a80595a5f0ea4",
       "size": 141142
     },
     "src-tauri/tauri.conf.json": {
-      "sha256": "f74cb8ce4d91ff8eb3e444bbed6efba6a537b8e3924957cf917d0c5a7f44c966",
-      "size": 1863
+      "sha256": "c74b72e33d1f0a23f8df90c3a2c3aef85e0e5a59ea183a96886d028924fa93f5",
+      "size": 1864
     },
     "src-tauri/tauri.no-updater.conf.json": {
       "sha256": "045e55901593915f744feabfb9a952abeeaa02d23342681e2bbe236a0da221e3",
@@ -52,16 +52,16 @@
       "size": 323
     },
     "package.json": {
-      "sha256": "2563bd295ae63475985b668447feba26eb53c4b9f1a47c79a44267e8f4175400",
-      "size": 2390
+      "sha256": "7f225679acbd3372ad673172da8e30e14c6012cd88b6e904f1e223a8419fe285",
+      "size": 2391
     },
     "package-lock.json": {
-      "sha256": "5e938f3158884115a1ffe4467b99aef84a48514eeb2b74bf15e45566ad17ff9a",
-      "size": 8113
+      "sha256": "de8039243909ca423823274979084e18932eead3b2daf2412de1f374e1d9ea1b",
+      "size": 8114
     },
     "version.json": {
-      "sha256": "efce7da4f8d977dd246cab77fb9dd2c0b3d7925738892290482b3d877c55ffa8",
-      "size": 586
+      "sha256": "eb089cb943f52342eb4fd3e0977ffea511944c1840fbf157afa8307b0527eb97",
+      "size": 870
     },
     "BUILD_WINDOWS.ps1": {
       "sha256": "dad396ff55387d88e770645bb76417fbb7f903ea2b2eb3b4ea9cbe24451411ca",
@@ -104,7 +104,7 @@
       "size": 5051
     },
     "scripts/preflight.mjs": {
-      "sha256": "2e0d26236bbec1b9703fd77a233d4b9725161a06d1cda1171ffbde608ddaf338",
+      "sha256": "4c829cd3198fc5119473aa23d9cfa005c1f00a6715d0fc789988f149efb46085",
       "size": 6146
     },
     "scripts/security-smoke.mjs": {
@@ -124,8 +124,8 @@
       "size": 6713
     },
     "scripts/engine-correctness-suite.mjs": {
-      "sha256": "6cfb55785aea6f15f38037d149e8e8b6ee361bba795e439a23f05f40315fface",
-      "size": 11023
+      "sha256": "4987c9023656444fcef3dade426de53e37c32df59004d7935a6a15389cda1f63",
+      "size": 14836
     },
     "scripts/android-static-smoke.mjs": {
       "sha256": "04695d3ea0aec2a63f17fab6f9788284ea830730985774bf23e053b9eb2bf1b3",
@@ -148,7 +148,7 @@
       "size": 2518
     },
     "scripts/runtime-truth-1140.mjs": {
-      "sha256": "cc66abeec4bc34109797a497526ab77af77109334e20d3929b03caf25bd72a08",
+      "sha256": "9001c4a1d7f756a88e40556d207a2e99292ac1d77234021e720c19b45195a8a8",
       "size": 4549
     },
     "scripts/trial-data-integrity-1141.mjs": {
@@ -172,7 +172,7 @@
       "size": 3601
     },
     "scripts/workspace-smoke.mjs": {
-      "sha256": "239933feeccca5772e45961442054bdef7261e3bfc529a5daffd1c81ddd8fa8a",
+      "sha256": "b00e58da87fbed54f232b67c14e345283ab5956b68a59249e86cbb50600a2ece",
       "size": 1050
     },
     "scripts/multimind-reliability.mjs": {

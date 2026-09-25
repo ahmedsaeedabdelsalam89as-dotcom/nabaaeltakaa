@@ -1,5 +1,5 @@
 {
-  "version": "1.48.0",
+  "version": "1.49.0",
   "released_at": "2026-09-26",
-  "notes": "Fixed a real bug where the voice assistant and command center only checked for a Claude key before attempting any cloud AI call, so an OpenAI-only setup silently fell back to a vague local analysis instead of calling OpenAI. The local fallback analysis was removed entirely per explicit request; a failed cloud connection now returns a clear, honest error instead. Also adds the first real correctness test suite for engine calculations (fuel intelligence, data logic validator) beyond structural/integrity checks."
+  "notes": "Adds a real, data-grounded predictive-maintenance model: for vehicles with 2+ historical maintenance records, computes the actual mean interval between that vehicle's own past services (MTBS) and compares current days-since-last-service against it, producing a realistic 'expected next service' estimate instead of generic score thresholds alone. Also merges the fleet health index and predictive failure engines into the dashboard's top-level unified 'System Pulse' card, closing a gap where these more advanced engines were built and used elsewhere but not surfaced in the single unified view. A third real correctness test (hand-verified expected numbers) was added covering the new MTBS logic. Dashcam/video safety and live GPS tracking were explicitly excluded from this round per instruction."
 }
