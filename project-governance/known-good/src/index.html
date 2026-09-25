@@ -7944,6 +7944,47 @@ var TRK_LIVE_DEFAULT_BASE = 'https://app.sactracking.com/UCIC/api';
     return TRK_LIVE_DEFAULT_BASE + path;
   }
 
+  // 🐛 فجوة حقيقية اكتُشفت بالمراجعة (2026-09-25): نسخة أندرويد ما كانتش بتقدر توصل لتتبع GPS اللحظي
+  // إطلاقًا — مفيهاش جسر Tauri الأصلي (بديل الويندوز لتفادي CORS)، والمسار الاحتياطي (دالة Firebase
+  // الوسيطة) مش بيتفعّل من أصله لأن location.origin على أندرويد "file://" مش "http". الحل: جسر أندرويد
+  // أصلي (NabaTrackingBridge.kt، مسجَّل باسم window.NabaTracking) بنفس منطق ومنطقية Rust بالضبط —
+  // JavascriptInterface من نوعه لا يقدر ينفّذ شبكة متزامنة، فالاستدعاء هنا "أطلق ولا تنتظر"، والنتيجة
+  // بترجع عبر window.__nabaTrackingResolve(callbackId, resultJson) اللي بتنادَى من الجانب الأصلي.
+  var NABA_TRK_ANDROID_CB = {};
+  var NABA_TRK_ANDROID_SEQ = 0;
+  function nabaAndroidTrackingGet(url, token) {
+    return new Promise(function (resolve, reject) {
+      if (!window.NabaTracking || typeof window.NabaTracking.get !== 'function') {
+        reject(new Error('جسر تتبع أندرويد غير متاح'));
+        return;
+      }
+      var id = 't' + (++NABA_TRK_ANDROID_SEQ) + '_' + Date.now();
+      NABA_TRK_ANDROID_CB[id] = { resolve: resolve, reject: reject };
+      setTimeout(function () {
+        if (NABA_TRK_ANDROID_CB[id]) {
+          delete NABA_TRK_ANDROID_CB[id];
+          reject(new Error('انتهت مهلة الاتصال بخادم التتبع (أندرويد)'));
+        }
+      }, 21000);
+      try {
+        window.NabaTracking.get(url, token, id);
+      } catch (e) {
+        delete NABA_TRK_ANDROID_CB[id];
+        reject(e instanceof Error ? e : new Error(String(e)));
+      }
+    });
+  }
+  window.__nabaTrackingResolve = function (id, resJson) {
+    var cb = NABA_TRK_ANDROID_CB[id];
+    if (!cb) return;
+    delete NABA_TRK_ANDROID_CB[id];
+    try {
+      var res = typeof resJson === 'string' ? JSON.parse(resJson) : resJson;
+      if (res && res.error) { cb.reject(new Error(res.error)); return; }
+      cb.resolve(res);
+    } catch (e) { cb.reject(e instanceof Error ? e : new Error(String(e))); }
+  };
+
   // ملاحظة هامة (2026-08-21، بند 49): اكتُشف فعليًا على جهاز المستخدم أن خادم شركة التتبع
   // (Sactracking.com) يرفض أى اتصال مباشر من متصفح — رسالة CORS صريحة فى الكونسول
   // ("No 'Access-Control-Allow-Origin' header")، خصوصًا أن الصفحة تُفتَح كملف محلي
@@ -7951,9 +7992,11 @@ var TRK_LIVE_DEFAULT_BASE = 'https://app.sactracking.com/UCIC/api';
   // الاحترافية الكبرى (تتصل بمزوّدي التتبع من خادم خلفي لا من متصفح العميل مباشرة).
   // الحل: عند التشغيل داخل تطبيق سطح المكتب (Tauri)، الاتصال يمر عبر أمر Rust مخصَّص
   // (`tracking_api_get` فى src-tauri/src/lib.rs) ينفّذ طلب HTTP حقيقي من داخل البرنامج نفسه
-  // لا من نافذة متصفح — فلا يخضع لقيد CORS إطلاقًا. عند التشغيل من المتصفح/ملف مباشرة (بلا
-  // Tauri)، يبقى المسار القديم (fetch) كما هو — سيفشل بنفس رسالة CORS المتوقَّعة، وهذا مقصود
-  // (الاتصال اللحظي الحقيقي بهذه الشركة تحديدًا متاح فقط عبر نسخة سطح المكتب من الآن فصاعدًا).
+  // لا من نافذة متصفح — فلا يخضع لقيد CORS إطلاقًا.
+  // 🔁 2026-09-25: نفس الحل بالضبط أُضيف الآن لنسخة أندرويد أيضًا (جسر NabaTracking أصلي، انظر
+  // nabaAndroidTrackingGet فوق) — كانت هذه فجوة حقيقية قبل اليوم (التتبع اللحظي لا يعمل على
+  // أندرويد إطلاقًا). عند التشغيل من متصفح ويب عادي بلا أي غلاف أصلي، يبقى المسار القديم (fetch)
+  // كما هو — سيفشل بنفس رسالة CORS المتوقَّعة، وهذا مقصود ومُوثَّق أدناه.
   function trkLiveFetch(path) {
     var s = loadTrackingLiveSettings();
     if (!s.token) return Promise.reject(new Error('لم يتم إدخال توكن التتبع اللحظي بعد'));
@@ -7970,6 +8013,17 @@ var TRK_LIVE_DEFAULT_BASE = 'https://app.sactracking.com/UCIC/api';
         .catch(function (err) {
           throw (err instanceof Error) ? err : new Error(String(err));
         });
+    }
+
+    // نسخة أندرويد (بلا Tauri) — جسر NabaTracking أصلي (انظر تعليق الفجوة فوق trkLiveApiUrl) يتفادى
+    // نفس قيد CORS بنفس منطق أمر Rust تمامًا، فيُفضَّل هنا قبل أي محاولة fetch() ستُرفَض حتمًا.
+    if (window.NabaTracking && typeof window.NabaTracking.get === 'function') {
+      return nabaAndroidTrackingGet(url, s.token).then(function (res) {
+        var txt = res && res.body;
+        var json; try { json = txt ? JSON.parse(txt) : null; } catch (e) { json = null; }
+        if (!res || !res.ok) throw new Error('HTTP ' + (res ? res.status : '?') + (json && json.message ? (' — ' + json.message) : ''));
+        return json;
+      });
     }
 
     return fetchWithTimeout(url, { method: 'GET', headers: { 'x-token': s.token } }, 20000)
@@ -20644,6 +20698,12 @@ function computeMaintenanceOptimization(){var f=computePredictiveFailureEngine()
   window.connectNabaEmailSession=connectNabaEmailSession;window.searchNabaEmail=searchNabaEmail;window.selectNabaEmail=selectNabaEmail;window.prepareNabaEmailReply=prepareNabaEmailReply;window.sendNabaEmailReply=sendNabaEmailReply;
   window.NabaEmailIntelligence={version:NABA_EMAIL_VERSION,deepContext:nabaEmailDeepContext,search:searchNabaEmail,prepareReply:prepareNabaEmailReply};
   var VERSION_LOG = [
+    {date:'2026-09-25',version:'1.46.0-android-gps-fix',title:'🛰️ إصلاح فجوة حقيقية: تتبع GPS اللحظي كان لا يعمل إطلاقًا على تطبيق أندرويد',items:[
+      'اكتُشف بالمراجعة الفعلية (لا تخمينًا): نسخة أندرويد لم يكن لها أي مسار يتجاوز قيد CORS المفروض من خادم Sactracking.com — نسخة الويندوز تتجاوزه عبر أمر Rust (tracking_api_get)، وأندرويد كان بيسقط على fetch() مباشر (يُرفَض) ثم على دالة Firebase الوسيطة التي أصلًا لا تُستدعى لأن location.origin على أندرويد "file://" مش "http" — أي فشل صامت دائم كان موجودًا من أول إطلاق تطبيق الأندرويد',
+      'الحل: جسر أندرويد أصلي جديد (NabaTrackingBridge.kt، مسجَّل باسم window.NabaTracking) بنفس القيود الأمنية والمنطق حرفيًا مثل نسخة Rust — https فقط + مضيف app.sactracking.com بالتحديد + مسار /UCIC/api + بلا إعادة توجيه + مهلة 20 ثانية + حد 2 ميجابايت للرد',
+      'الجافاسكربت المشترك (nabaAndroidTrackingGet فى src/index.html) بيفضّل هذا الجسر تلقائيًا عند توفره، قبل أي محاولة fetch() كانت ستفشل حتمًا — بلا أي تغيير مطلوب من المستخدم',
+      'التحقق الكامل (cargo/JS) تم محليًا فى هذه الجلسة؛ التحقق الفعلي النهائي (تجميع APK حقيقي) سيتم تلقائيًا عبر .github/workflows/build-android.yml عند وصول هذا التحديث'
+    ]},
     {date:'2026-09-25',version:'1.46.0-android',title:'📱 تطبيق أندرويد أصلي جديد بالكامل (fleet-android/) — نفس واجهة الويندوز حرفيًا، ومزامنة Firebase موحدة بين اللابتوب وجهاز الشغل والموبايل',items:[
       'لا يوجد مشروع أندرويد سابق فى المستودع لهذا التطبيق (نسخة APK قديمة وصلت من جلسة/أداة خارجية غير موثَّقة هنا) — بُني مشروع Kotlin/Gradle كامل من الصفر يغلّف نفس src/index.html فى WebView أصلي، بدل الاعتماد على نسخة منفصلة قد تنحرف عن نسخة الويندوز',
       'scripts/sync-android-assets.mjs ينسخ src/index.html + src/modules + src/styles إلى assets التطبيق آليًا قبل كل بناء — src/ يبقى المصدر الحقيقى الوحيد لكلا التطبيقين، فلا يتكرر انحراف الإصدارات المكتشف سابقًا (نسخة موبايل أقدم بـ~3400 سطر عن نسخة الويندوز)',
