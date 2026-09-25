@@ -2925,7 +2925,10 @@ return ctor.prototype=parent.prototype,child.prototype=new ctor,child.__super__=
     var key='';try{key=localStorage.getItem(NABA_CLOUD_AI_KEY_STORAGE)||'';}catch(_){}
     add('secret-storage','حماية مفتاح الذكاء',!key,key?'توجد قيمة قديمة تحتاج ترحيلًا':'لا يوجد مفتاح Anthropic في التخزين النصي');
     add('startup','بدء التشغيل',!(window.NABA_STARTUP_ERRORS||[]).length,(window.NABA_STARTUP_ERRORS||[]).length+' أخطاء بدء تشغيل');
-    add('modules','مكونات الواجهة',!!(window.NabaWorkspace&&window.NABA_UNIFIED&&window.NABA_PEER&&window.NABA_SCHEMA&&window.NABA_WINDOWS_SYNC&&window.NABA_SYNC_CENTER),'توافر مكونات الواجهة المضمّنة؛ لا يثبت اتصال خدمات Windows');
+    // 🗑️ 2026-09-25: فحص "مكونات الواجهة" القديم كان بيتأكد من توافر NABA_UNIFIED/NABA_PEER/NABA_SCHEMA/
+    // NABA_WINDOWS_SYNC/NABA_SYNC_CENTER (مزامنة الواي فاي المحلي) — أُزيلت هذه الميزة بالكامل بقرار خبير
+    // مُوثَّق (كانت معطَّلة فعليًا من جهة الإرسال منذ البداية، ومزامنة Firebase تغطي نفس الهدف وتعمل فعليًا).
+    add('modules','مكونات الواجهة',!!window.NabaWorkspace,'توافر مكونات الواجهة المضمّنة');
     return out;
   }
 
@@ -20727,6 +20730,12 @@ function computeMaintenanceOptimization(){var f=computePredictiveFailureEngine()
   window.connectNabaEmailSession=connectNabaEmailSession;window.searchNabaEmail=searchNabaEmail;window.selectNabaEmail=selectNabaEmail;window.prepareNabaEmailReply=prepareNabaEmailReply;window.sendNabaEmailReply=sendNabaEmailReply;
   window.NabaEmailIntelligence={version:NABA_EMAIL_VERSION,deepContext:nabaEmailDeepContext,search:searchNabaEmail,prepareReply:prepareNabaEmailReply};
   var VERSION_LOG = [
+    {date:'2026-09-25',version:'1.46.0-lan-sync-retired',title:'🗑️ إزالة "مزامنة الواي فاي المحلي" نهائيًا — قرار خبير مُوثَّق، لا تراجع عنه',items:[
+      'السبب: هذه الميزة كانت معطَّلة فعليًا من جهة الإرسال منذ بنائها (enqueue() فى naba-unified-sync.js لم يكن يُستدعى فى أي مكان بالكود إطلاقًا — تأكيد بالبحث الشامل، لا تخمينًا)، وحتى لو اشتغلت لاحقًا فهدفها الوحيد (ربط الموبايل بالكمبيوتر) محقَّق فعليًا ومُختبَر اليوم عبر مزامنة Firebase السحابية العاملة',
+      'بناء نظام اتصال مباشر (Windows DNS-SD + خادم TCP محلي فى naba_peer.rs) محتاج اختبار حقيقي لجهازين فعليين على نفس الشبكة — غير متاح للتحقق فى بيئة العمل الحالية، فالإبقاء عليه معطَّلًا/نصف مبني كان بيزوّد التعقيد وسطح الهجوم بلا أي فائدة فعلية',
+      'أُزيلت بالكامل: src/modules/naba-unified-sync.js، naba-peer-protocol.js، schema-gate.js، naba-windows-sync.js، naba-sync-center.js، src-tauri/src/naba_peer.rs (وأوامر Tauri المسجَّلة لها)، زر "⇄ مزامنة" العائم، وكل الفحوصات والاختبارات الثابتة المرتبطة بها (scripts/unified-sync-smoke.mjs، scripts/windows-dnssd-smoke.mjs) — البرنامج أبسط وأقل عناصر بلا أي خسارة فعلية فى القدرة',
+      'التحقق المحلي الكامل: cargo check ناجح بلا أي تحذير، guardian --snapshot/--verify (52 ملف حرج بدل 57)، npm run test:all كامل بنجاح'
+    ]},
     {date:'2026-09-25',version:'1.46.0-devtab',title:'🛠️ تبويب "المطور" الجديد — متابعة تطور البرنامج والخطوة الجاية بلغة بسيطة',items:[
       'صفحة جديدة فى القائمة الجانبية (تبويب المطور) تعرض سجل التحديثات الحقيقي بصياغة "ده بيفيدك فى ايه" بدل اللغة التقنية، وقائمة خطوات مقترحة حقيقية مبنية على مراجعة فعلية لحالة البرنامج (مش عناوين عامة أو أفكار افتراضية)',
       'كل خطوة مقترحة مُصنَّفة بوضوح: "يحتاج منك دقيقتين" (اختبار سريع)، "قرار بسيط منك" (موافقة/رفض)، أو "بحث إضافي مطلوب" — عشان تعرف فورًا إيه اللي محتاج فعل منك وإيه اللي شغال لوحده',
@@ -21017,7 +21026,7 @@ function computeMaintenanceOptimization(){var f=computePredictiveFailureEngine()
     { status: 'يحتاج منك دقيقتين', title: '📱 اختبار واتساب بحساب Green API الحقيقي بتاعك', body: 'البنية والاتصال سليمين وتم اختبارهم فعليًا، لكن محتاجين بياناتك الحقيقية (رقم Instance والتوكن) وضغطة واحدة على "جلب أحدث الرسائل" فى صفحة "ربط واتساب" عشان نتأكد إن الرسائل بترجع فعلًا — مش حاجة أقدر أعملها من غيرك حفاظًا على أمان حسابك.' },
     { status: 'يحتاج منك دقيقتين', title: '🛰️ تجربة تتبع GPS الحقيقي على تطبيق الأندرويد', body: 'اتصلح فعليًا (جسر اتصال جديد للأندرويد، وتم بناء APK ناجح والتحقق منه على GitHub) — الخطوة الأخيرة إنك تحمّل آخر نسخة APK وتجرّب التتبع اللحظي فعليًا على موبايلك عشان نقفل الملف ده بدليل استخدام حقيقي.' },
     { status: 'قرار بسيط منك', title: '🗑️ حذف 4 ملفات شاردة من مجلد .github/workflows', body: 'وصلت هناك بالغلط فى جلسة سابقة (نسخة قديمة من package.json وملفات مشابهة) ومش بتأثر على شغل البرنامج، لكن الأفضل نظافتها. الحذف الآلي معطَّل هنا كإجراء أمان، فمحتاجة ضغطتين منك على GitHub (هبعتلك الروابط المباشرة).' },
-    { status: 'قرار بسيط منك', title: '🔌 مصير "المزامنة المباشرة عبر الواي فاي المحلي"', body: 'اتفحصت بعمق ولقيناها غير مفعَّلة فعليًا من الأساس (مش باج بسيط، الميزة كلها معطَّلة من ناحية الإرسال). النصيحة كخبير: ما نبنيهاش دلوقتي لأن مزامنة Firebase الحالية شغالة ومُختبَرة وبتغطي نفس الهدف (ربط اللابتوب بجهاز الشغل والموبايل)، وبناء ميزة تانية بنفس الغرض هيزود التعقيد من غير فايدة حقيقية. لو عندك سبب تاني (مثلاً مكان بلا إنترنت خالص) قولّي ونعيد التقييم.' },
+    { status: '✅ اتقفل النهارده', title: '🔌 مصير "المزامنة المباشرة عبر الواي فاي المحلي"', body: 'القرار اتاخد ونُفِّذ فعليًا: الميزة كانت معطَّلة من الأساس (مش باج بسيط)، وهدفها محقَّق فعليًا عبر مزامنة Firebase الشغالة والمُختبَرة. اتشالت بالكامل من الكود (مش مخفية بس) — البرنامج بقى أبسط بلا أي خسارة فعلية. لو ظهر سبب حقيقي لاحقًا (مكان بلا إنترنت خالص مثلًا) نقدر نعيد التقييم من الصفر.' },
     { status: 'بحث إضافي مطلوب', title: '🧠 صيانة وقائية تنبؤية من بيانات الاستهلاك الفعلية', body: 'البرنامج عنده بالفعل محركات تحليل استهلاك وقود، وممكن نبني عليها تنبؤ بموعد الأعطال المتوقعة قبل حدوثها (بناءً على نمط الاستهلاك الفعلي لكل مركبة لا جدول صيانة ثابت) — ده تحسين حقيقي فى التكلفة والجاهزية، بس محتاج بيانات صيانة تاريخية كافية الأول عشان يكون دقيق، مش تخمين.' },
     { status: 'تصميم أمان منفصل', title: '🔎 بحث تلقائي داخل البرنامج عن تحديثات وأدوات جديدة', body: 'ده الميزة اللي طلبتها فى وصف المشروع الأصلي (تبويب المطور يبحث بنفسه عن تحسينات). حاليًا بابحث أنا شخصيًا وقت ما تفتح جلسة معايا، لكن خليها تلقائية جوه البرنامج وهو شغال محتاج تصميم أمان دقيق (قائمة مواقع موثوقة محدودة، مراجعة قبل أي تفعيل) عشان ما نفتحش البرنامج لخطر حقيقي. لو موافق نبدأ نصمم الجزء ده بحذر كخطوة منفصلة.' }
   ];
@@ -22113,11 +22122,6 @@ function computeMaintenanceOptimization(){var f=computePredictiveFailureEngine()
 
 </script>
   <script src="./modules/naba-workspace.js"></script>
-  <script src="./modules/naba-unified-sync.js"></script>
-  <script src="./modules/naba-peer-protocol.js"></script>
-  <script src="./modules/schema-gate.js"></script>
-  <script src="./modules/naba-windows-sync.js"></script>
-  <script src="./modules/naba-sync-center.js"></script>
 
 <!-- NABA VERIFIED INFORMATION v1: high-risk source-of-truth governance, 2026-09-10 -->
 <script id="naba-csp-compat-v2">
