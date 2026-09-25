@@ -1,0 +1,57 @@
+name: Build Android Fleet App
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'fleet-android/**'
+      - 'src/index.html'
+      - 'src/modules/**'
+      - 'src/styles/**'
+      - 'version.json'
+      - '.github/workflows/build-android.yml'
+  workflow_dispatch: {}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      # المصدر الوحيد لواجهة الموبايل هو src/ — لا يُعتمَد أبدًا على أى نسخة قديمة داخل fleet-android/.
+      - name: Sync shared web assets into the Android project
+        run: node scripts/sync-android-assets.mjs
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - uses: android-actions/setup-android@v3
+
+      - name: Accept Android SDK licenses
+        run: yes | sdkmanager --licenses > /dev/null || true
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.7'
+
+      - name: Assemble debug APK
+        working-directory: fleet-android
+        run: gradle :app:assembleDebug --stacktrace
+
+      - name: Locate APK
+        id: apk
+        run: |
+          APK_PATH=$(find fleet-android/app/build/outputs/apk/debug -name '*.apk' | head -n1)
+          echo "path=$APK_PATH" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: naba-fleet-android-debug
+          path: ${{ steps.apk.outputs.path }}
+          retention-days: 90
