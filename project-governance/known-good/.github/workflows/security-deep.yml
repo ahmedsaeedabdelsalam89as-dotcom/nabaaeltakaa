@@ -27,8 +27,19 @@ jobs:
         run: npm audit --omit=dev
       - name: Full deterministic regression gate
         run: npm run test:all
+      # Tauri v2 + tauri-plugin-stt (Whisper/cpal) يحتاجان مكتبات نظام Linux (GTK/WebKit/ALSA) غير مثبَّتة
+      # افتراضيًا على ubuntu-latest — بدونها يفشل cargo check بخطأ pkg-config (glib-2.0 ثم gdk-3.0 ثم alsa)
+      # قبل أن يصل لأي كود فعلي. القائمة مُتحقَّق منها فعليًا (cargo check --locked نجح محليًا بهذه الحزم
+      # بالضبط)، وليست تخمينًا. هذا عطل قديم كان موجودًا قبل أي تعديل من هذه الجلسة (فشل بنفس الشكل منذ
+      # عشرات التشغيلات السابقة) — لا علاقة له بإضافة تطبيق الأندرويد.
+      - name: Install Tauri Linux build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev \
+            patchelf libxdo-dev libssl-dev libasound2-dev
+
       - name: Locked Rust compile check
-        run: cargo check --manifest-path src-tauri/Cargo.toml
+        run: cargo check --manifest-path src-tauri/Cargo.toml --locked
       - name: RustSec audit
         run: |
           cargo install cargo-audit --locked
