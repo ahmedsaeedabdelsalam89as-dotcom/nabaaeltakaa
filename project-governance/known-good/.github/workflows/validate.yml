@@ -22,5 +22,13 @@ jobs:
         run: npm run test:all
       - name: Guardian integrity verify
         run: node scripts/naba-code-guardian.mjs --verify
+      # نفس عطل glib-2.0/gdk-3.0/alsa المُصلَح فى security-deep.yml (وبنفس الحزم المُتحقَّق منها فعليًا هناك)
+      # — كان يفشل هنا أيضًا منذ عشرات التشغيلات السابقة (Validate Naba Fleet #1 وما بعدها)، ولا علاقة له
+      # بأى تعديل من هذه الجلسة.
+      - name: Install Tauri Linux build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev \
+            patchelf libxdo-dev libssl-dev libasound2-dev
       - name: Rust check
-        run: cargo check --manifest-path src-tauri/Cargo.toml
+        run: cargo check --manifest-path src-tauri/Cargo.toml --locked
