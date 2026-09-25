@@ -9727,11 +9727,12 @@ function computeDynamicRebalancing(sourceProject,targetProject,qty){
   }
 
   /* ---------------------------------------------------------------------
-     Naba AI Copilot (مُستبدَل - نسخة "Sovereign" المُسترجَعة، أفضل من النسخة
-     الأولى المبنية سابقًا اليوم): يحدد نوع السؤال أولًا (detectNabaIntent) ثم
-     يبني سياقًا مختصرًا مرتبطًا بالمهمة تحديدًا (buildNabaAgentContext) قبل
-     استدعاء WebLLM — ومعه رد احتياطي محلي حقيقي (nabaLocalFallback) لو الجهاز
-     لا يدعم WebGPU، بدل فشل صامت كامل كما كان فى النسخة الأولى.
+     Naba AI Copilot: يحدد نوع السؤال أولًا (detectNabaIntent) ثم يبني سياقًا
+     مختصرًا مرتبطًا بالمهمة تحديدًا (buildNabaAgentContext) قبل استدعاء الذكاء
+     السحابي (Claude أو OpenAI حسب المزوّد المختار، عبر nabaAiCloudModelSynthesisAny).
+     🔒 2026-09-25 (بطلب أحمد صراحة): أُلغي التحليل المحلي الحتمي الاحتياطي
+     (nabaLocalFallback) نهائيًا — كان يعطي ردًا غامضًا يوحي أنه تحليل ذكاء حقيقي
+     رغم عدم وجود اتصال سحابي أصلًا. لا يوجد اتصال ذكاء = رسالة خطأ صريحة فقط.
      🐛 تم إصلاح خطأ حقيقي أثناء الفحص: NABA_CONTEXT_ENGINE_VERSION لم تكن
      معرَّفة إطلاقًا فى الملف الأصلي (كانت ستُسبِّب فشل buildNabaContextPack).
      --------------------------------------------------------------------- */
@@ -9836,56 +9837,38 @@ function buildNabaContextPack(mode) {
   }
 
 async function runNabaCopilot() {
-    await hydrateNabaCloudAiKey();
+    await hydrateNabaCloudAiKey(); await hydrateNabaOpenAiKey();
     var q=$('#nabaCopilotQuestion'), out=$('#nabaCopilotResult'), st=$('#nabaCopilotStatus');
     if(!q||!out||!st) return;
     var question=q.value.trim();
     if(!question){st.textContent='اكتب السؤال أولًا.';return;}
     var intent=detectNabaIntent(question), context=buildNabaAgentContext(question);
-    st.textContent='تم تحديد المهمة: '+intent+' — تجهيز أقل سياق لازم...';
+    st.textContent='تم تحديد المهمة: '+intent+' — جارِ الاتصال بالذكاء السحابي...';
     // Let the actual request determine connectivity; do not infer CORS failure from file: alone.
 
     try {
-      var text;
-      if (nabaCloudAiKey()) {
-        st.textContent = 'جارِ الاتصال بالذكاء السحابي (Claude)...';
-        var cloudRes = await nabaAiCloudModelSynthesisAny(question, { executive: {} }, {});
-        text = cloudRes.text || 'لم يصل رد من النموذج السحابي.';
-        out.innerHTML=aiSectionHtml('☁️ إجابة Naba Copilot (Claude)', '<div data-naba-style="white-space:pre-wrap;line-height:1.8;">'+escapeHtml(text)+'</div>');
-        st.textContent='✔ تمت الإجابة عبر الذكاء السحابي (Claude) — تكلفة الاستخدام على حسابك.';
-      } else {
-        // 🔒 إزالة أمنية: كان هذا المسار يحمّل مكتبة WebLLM من الإنترنت وقت التشغيل (remote code loading)
-        // — مخالفة موثَّقة فى توثيق Tauri الأمني الرسمي ("Remote URLs are discouraged; assets are bundled
-        // and loaded from the local filesystem")، وهي أيضًا المصدر الفعلي لخطأ Cache غير المحلول سابقًا.
-        // البديل الآن: تحليل محلي آمن حتمي (بلا أي تحميل شبكي) بدل محاولة تحميل نموذج ذكاء عن بُعد.
-        text = nabaLocalFallback(question);
-        out.innerHTML=aiSectionHtml('🛡️ تحليل محلي آمن (بدون ذكاء سحابي مُفعَّل)', '<div data-naba-style="white-space:pre-wrap;line-height:1.8;">'+escapeHtml(text)+'<br><br>💡 لتفعيل ردود أذكى وأكثر طلاقة، أضف مفتاح Anthropic API من الكارت أعلاه.</div>');
-        st.textContent='تحليل محلي حتمي (بدون اتصال خارجي) — لا يوجد مفتاح ذكاء سحابي محفوظ.';
-      }
+      var cloudRes = await nabaAiCloudModelSynthesisAny(question, { executive: {} }, {});
+      var providerLabel = cloudRes.providerUsed === 'openai' ? 'OpenAI' : 'Claude';
+      var text = cloudRes.text || 'لم يصل رد من النموذج السحابي.';
+      out.innerHTML=aiSectionHtml('☁️ إجابة Naba Copilot ('+providerLabel+')', '<div data-naba-style="white-space:pre-wrap;line-height:1.8;">'+escapeHtml(text)+'</div>');
+      st.textContent='✔ تمت الإجابة عبر الذكاء السحابي ('+providerLabel+') — تكلفة الاستخدام على حسابك.';
     } catch(err) {
       console.warn('Naba Copilot cloud model unavailable:',err);
-      // 🩺 تمييز نوع الخطأ: "Failed to fetch" (TypeError) يعني حجب شبكي/CORS قبل وصول الطلب لـ Anthropic أصلًا،
-      // وهذا مختلف تمامًا عن خطأ HTTP فعلي (مفتاح خاطئ، صلاحية منتهية...) القادم من nabaAiCloudModelSynthesis.
+      // 🔒 2026-09-25 (بطلب أحمد صراحة): أُلغي التحليل المحلي الحتمي الاحتياطي (nabaLocalFallback) نهائيًا من
+      // هذا المسار — كان يعطي ردًا غامضًا يوهم بأنه "شغال" بينما لا يوجد اتصال ذكاء حقيقي أصلًا، وهذا أسوأ من
+      // رسالة خطأ صريحة لأنه يكسر الثقة تدريجيًا بدون أن ينتبه أحد. البديل الآن: تشخيص صريح لسبب الفشل فقط.
+      var isNoKey = /لا يوجد أي مفتاح/.test(String(err && err.message || ''));
+      // 🩺 تمييز نوع الخطأ: "Failed to fetch" (TypeError) يعني حجب شبكي/CORS قبل وصول الطلب للخدمة أصلًا،
+      // وهذا مختلف تمامًا عن خطأ HTTP فعلي (مفتاح خاطئ، صلاحية منتهية...) القادم من طبقة الاتصال نفسها.
       var isNetworkBlock = err && (err.name === 'TypeError' || /failed to fetch/i.test(String(err.message || '')));
-      var diagLine = isNetworkBlock
-        ? '⛔ فشل الاتصال الشبكي قبل الوصول لـ Anthropic — غالبًا حجب CORS (تأكد إنك تفتح النظام من رابط https مستضاف وليس ملفًا محليًا)، أو لا يوجد إنترنت.'
-        : '⚠ رد من Anthropic بخطأ فعلي (تحقق من صحة المفتاح وصلاحيته): ' + err.message;
-      out.innerHTML=aiSectionHtml('🛡️ تحليل محلي احتياطي', '<div data-naba-style="white-space:pre-wrap;line-height:1.8;">'+escapeHtml(nabaLocalFallback(question))+'</div>' +
-        '<div class="small-note" data-naba-style="margin-top:8px;color:#fbbf24;">' + escapeHtml(diagLine) + '</div>');
+      var diagLine = isNoKey
+        ? '⛔ لا يوجد أي مفتاح ذكاء سحابي محفوظ (Claude أو OpenAI) — افتح كارت الإعدادات أعلاه واحفظ مفتاح واحد على الأقل.'
+        : isNetworkBlock
+        ? '⛔ فشل الاتصال الشبكي قبل الوصول للخدمة — غالبًا حجب CORS (تأكد إنك تفتح النظام من رابط https مستضاف وليس ملفًا محليًا)، أو لا يوجد إنترنت.'
+        : '⚠ رد من مزوّد الذكاء السحابي بخطأ فعلي (تحقق من صحة المفتاح وصلاحيته): ' + err.message;
+      out.innerHTML=aiSectionHtml('⛔ تعذر الاتصال بالذكاء السحابي', '<div class="small-note" data-naba-style="color:#e05a5a;">' + escapeHtml(diagLine) + '</div>');
       st.textContent=diagLine;
     }
-  }
-
-function nabaLocalFallback(question) {
-    var intent=detectNabaIntent(question), ctx=buildNabaAgentContext(question);
-    var summary='تم تحليل السؤال محليًا بدون إرسال البيانات للخارج.\n\n';
-    if(intent==='risk') summary+='الأولوية: راجع أولوية التشغيل والمخاطر المرتفعة أولًا، ولا تعتمد أي قرار يخص سائقًا إلا إذا كان اعتماده HR صريحًا.';
-    else if(intent==='fuel') summary+='الأولوية: قارن استهلاك المركبة بأدائها التاريخي وبالمسافة الفعلية، وليس بمتوسط مركبة مختلفة فقط.';
-    else if(intent==='maintenance') summary+='الأولوية: افحص المركبات ذات الدخول المتكرر للورشة والتأخير عن الحد التشغيلي.';
-    else if(intent==='documents') summary+='الأولوية: عالج المستندات المنتهية أولًا ثم القريبة من الانتهاء، مع مراجعة المصدر قبل تحديث السجل.';
-    else if(intent==='personnel') summary+='قاعدة السلامة: الاسم الموجود في المركبة لا يعني تلقائيًا أنه سائق معتمد.';
-    else summary+='تم تحديد المهمة وبناء سياق مختصر. للحصول على إجابة لغوية أعمق فعّل WebGPU على جهاز يدعمها.';
-    return summary+'\n\n[السياق الداخلي المختصر]\n'+ctx;
   }
 
 function clearNabaCopilot(){ var q=$('#nabaCopilotQuestion'),o=$('#nabaCopilotResult'),s=$('#nabaCopilotStatus'); if(q)q.value=''; if(o)o.innerHTML=''; if(s)s.textContent=''; }
@@ -19707,20 +19690,27 @@ function computeMaintenanceOptimization(){var f=computePredictiveFailureEngine()
     catch (err) { packet = { ok: false, error: String(err && err.message || err) }; }
     var needsDeepAi = !!(packet && packet.ok && packet.result && packet.result.needsCopilot);
     if (!needsDeepAi) return { packet: packet, text: nabaAiCommandSummary(packet), source: 'engine' };
-    try { await hydrateNabaCloudAiKey(); } catch (_) { if (typeof console !== 'undefined' && console.warn) console.warn('[naba-silent-catch]', _ && _.message || _); }
-    if (nabaCloudAiKey()) {
-      try {
-        var cloudRes = await nabaAiCloudModelSynthesisAny(command, { executive: {} }, {});
-        return { packet: packet, text: cloudRes.text || 'لم يصل رد من النموذج السحابي.', source: 'cloud' };
-      } catch (err) {
-        var isNetworkBlock = err && (err.name === 'TypeError' || /failed to fetch/i.test(String(err.message || '')));
-        var diagLine = isNetworkBlock
-          ? '⛔ فشل الاتصال الشبكي بالذكاء السحابي — تأكد من الإنترنت.'
-          : '⚠ رد الذكاء السحابي بخطأ (تحقق من صحة المفتاح): ' + String(err && err.message || err);
-        return { packet: packet, text: nabaLocalFallback(command) + '\n\n' + diagLine, source: 'local_fallback_error' };
-      }
+    try { await hydrateNabaCloudAiKey(); await hydrateNabaOpenAiKey(); } catch (_) { if (typeof console !== 'undefined' && console.warn) console.warn('[naba-silent-catch]', _ && _.message || _); }
+    // 🔒 2026-09-25 (بطلب أحمد صراحة): كان الفحص هنا يتحقق من مفتاح Claude فقط (nabaCloudAiKey())
+    // قبل محاولة أي اتصال سحابي — يعني لو أحمد حفظ مفتاح OpenAI بس (بدون Claude)، كان المسار بيتجاهله
+    // تمامًا ويروح على طول للتحليل المحلي، حتى لو OpenAI كان مُختارًا كمزوّد أساسي. هذا هو السبب الحقيقي
+    // وراء بلاغ "الصوت بيرد بالرد الداخلي مش الـ OpenAI". الإصلاح: نجرّب nabaAiCloudModelSynthesisAny
+    // مباشرة (هي نفسها بتفحص المزودين الاثنين بالترتيب الصحيح)، ولو فشلت الاثنين معًا أو لا يوجد أي مفتاح،
+    // نرجّع تشخيصًا صريحًا فقط — لا تحليل محلي حتمي يوهم أنه رد ذكاء فعلي (nabaLocalFallback أُلغي من هنا نهائيًا).
+    try {
+      var cloudRes = await nabaAiCloudModelSynthesisAny(command, { executive: {} }, {});
+      var providerLabel = cloudRes.providerUsed === 'openai' ? 'OpenAI' : 'Claude';
+      return { packet: packet, text: cloudRes.text || 'لم يصل رد من النموذج السحابي.', source: 'cloud', provider: cloudRes.providerUsed, providerLabel: providerLabel };
+    } catch (err) {
+      var isNoKey = /لا يوجد أي مفتاح/.test(String(err && err.message || ''));
+      var isNetworkBlock = err && (err.name === 'TypeError' || /failed to fetch/i.test(String(err.message || '')));
+      var diagLine = isNoKey
+        ? '⛔ لا يوجد أي مفتاح ذكاء سحابي محفوظ (Claude أو OpenAI) — افتح الإعدادات واحفظ مفتاح واحد على الأقل.'
+        : isNetworkBlock
+        ? '⛔ فشل الاتصال الشبكي بالذكاء السحابي — تأكد من الإنترنت.'
+        : '⚠ رد الذكاء السحابي بخطأ (تحقق من صحة المفتاح): ' + String(err && err.message || err);
+      return { packet: packet, text: diagLine, source: 'cloud_error' };
     }
-    return { packet: packet, text: nabaLocalFallback(command), source: 'local_fallback' };
   }
   window.nabaAiSmartAnswer = nabaAiSmartAnswer;
 
@@ -19736,9 +19726,8 @@ function computeMaintenanceOptimization(){var f=computePredictiveFailureEngine()
     var packet=answer.packet, summary=answer.text;
     NABA_AI_COMMAND_LAST_TEXT=summary;
     out.innerHTML='<div class="card" data-naba-style="margin:0;background:rgba(255,255,255,.035);"><div data-naba-style="white-space:pre-wrap;line-height:1.8;">'+escapeHtml(summary)+'</div></div>';
-    var sourceLabel = answer.source==='cloud' ? '✔ إجابة الذكاء السحابي (Claude)'
-      : answer.source==='local_fallback' ? 'تحليل محلي آمن (بدون مفتاح سحابي محفوظ)'
-      : answer.source==='local_fallback_error' ? 'تحليل محلي احتياطي (تعذر الاتصال بالسحابة)'
+    var sourceLabel = answer.source==='cloud' ? '✔ إجابة الذكاء السحابي ('+(answer.providerLabel||(answer.provider==='openai'?'OpenAI':'Claude'))+')'
+      : answer.source==='cloud_error' ? '⛔ تعذر الاتصال بالذكاء السحابي'
       : (packet&&packet.ok?'✔ تم التنفيذ':'⚠ تعذر الإكمال');
     if(status) status.textContent=sourceLabel+' — المسار: '+escapeHtml(String(packet&&packet.intent||'غير محدد'));
     nabaAiAudit('command_center_result',{command:command,intent:packet&&packet.intent||'',ok:!!(packet&&packet.ok),source:answer.source});
@@ -21042,6 +21031,12 @@ function computeMaintenanceOptimization(){var f=computePredictiveFailureEngine()
   window.connectNabaEmailSession=connectNabaEmailSession;window.searchNabaEmail=searchNabaEmail;window.selectNabaEmail=selectNabaEmail;window.prepareNabaEmailReply=prepareNabaEmailReply;window.sendNabaEmailReply=sendNabaEmailReply;
   window.NabaEmailIntelligence={version:NABA_EMAIL_VERSION,deepContext:nabaEmailDeepContext,search:searchNabaEmail,prepareReply:prepareNabaEmailReply};
   var VERSION_LOG = [
+    {date:'2026-09-25',version:'1.47.0-ai-provider-routing-fix',title:'🐛 إصلاح جذري: الصوت/مركز الأوامر كان يتجاهل مفتاح OpenAI تمامًا ويروح للرد الداخلي + إلغاء الرد الداخلي نهائيًا',items:[
+      'السبب الجذري الحقيقي المؤكَّد (اكتُشف أثناء الفحص، وليس بلاغًا عامًا): nabaAiSmartAnswer (المحرك الفعلي وراء الصوت ومركز الأوامر) و runNabaCopilot كانا يفحصان وجود مفتاح Claude فقط (nabaCloudAiKey()) قبل محاولة أي اتصال سحابي — لو أحمد حفظ مفتاح OpenAI بس بدون Claude، كان الشرط بيفشل ويروح مباشرة للتحليل المحلي، حتى لو OpenAI كان مُختارًا كمزوّد أساسي فعليًا فى الإعدادات. هذا هو التفسير الدقيق لبلاغ "المايك بيرد بالرد الداخلي مش الـ OpenAI".',
+      'الإصلاح: المساران بقيا يستدعيان nabaAiCloudModelSynthesisAny() مباشرة بدون أي فحص مسبق للمفتاح — هي نفسها بتجرّب المزوّد الأساسي المختار (Claude أو OpenAI) ثم تتحوّل تلقائيًا للتاني لو فشل، بنفس منطقها الصحيح المبني من قبل والذي لم يكن يُستدعى فعليًا من نقطة الدخول.',
+      'بطلب أحمد صراحة: أُلغي التحليل المحلي الحتمي الاحتياطي (nabaLocalFallback) نهائيًا من كل مسارات الذكاء (Copilot + الصوت/مركز الأوامر) — كان يعطي ردًا غامضًا بيوهم إنه تحليل ذكاء حقيقي رغم عدم وجود اتصال سحابي أصلًا، وده بيكسر الثقة بصمت. البديل الآن: لا اتصال = رسالة تشخيص صريحة بالسبب الحقيقي (لا يوجد مفتاح / فشل شبكي / خطأ فى المفتاح)، مفيش رد وهمي.',
+      'تحقُّق: command-center-ui-smoke.mjs مُحدَّث ليعكس السلوك الجديد (رسالة "لا يوجد أي مفتاح ذكاء سحابي محفوظ" بدل الرد المحلي) ونجح فعليًا. دالة nabaLocalFallback اتشالت بالكامل من الكود، 0 استدعاء متبقٍّ لها إلا فى تعليقات توثيقية.'
+    ]},
     {date:'2026-09-25',version:'1.47.0-doclink-driver-source-catalog',title:'🗂️ ربط تلقائي فائق الذكاء بين فهرس المستندات المصدري (917 مستندًا) والسائقين',items:[
       'محرك جديد nabaBackfillSourceDocumentLinks يعمل تلقائيًا عند كل تحميل (Idempotent — آمن التكرار، يصلح نفسه ذاتيًا مع أي مستندات/سواقين جدد لاحقًا): يربط SOURCE_DOCUMENT_CATALOG بالسائقين على 3 مراحل بترتيب الثقة: (1) رقم اللوحة → 140 مستندًا جديدًا (زائد 5 مربوطة يدويًا مسبقًا)، (2) ملاحظة فحص بصري سابقة موثّقة فعليًا فى بيانات السائق نفسه (_driver_card_source_note) → 23 مستندًا، (3) مطابقة اسم ذكية محافظة (Jaccard) لفئات بطاقات/رخص/هويات السائقين فقط → مستند واحد بثقة عالية تلقائيًا + اقتراح واحد فقط محفوظ للمراجعة البشرية (وليس مراجعة كل الفهرس يدويًا).',
       'إصلاح إضافي حقيقي اكتُشف أثناء البناء: 52 من أصل 145 قيمة FLEET.driver لا تطابق نصيًا أي اسم فى APP.DRIVERS (بعضها اسم شركة/مقاول فعلي، وبعضها نفس السائق بصياغة مختلفة قليلًا) — أُضيفت دالة تحليل تطابق قانوني (canonical) تبحث فى legacy_names أيضًا قبل الربط، فحلّت جزءًا من هذه الحالات فعليًا (مثال محقَّق: "قيصر علي سياي غلاب شاه" فى المركبة ↔ "قيصر علي شاه" فى DRIVERS أصبحا يُربَطان بنجاح الآن).',

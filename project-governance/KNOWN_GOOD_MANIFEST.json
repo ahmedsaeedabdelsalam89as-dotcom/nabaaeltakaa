@@ -1,11 +1,11 @@
 {
   "schema": 1,
   "project": "Naba Fleet System",
-  "createdAt": "2026-09-25T19:54:12.522Z",
+  "createdAt": "2026-09-25T20:21:57.844Z",
   "files": {
     "src/index.html": {
-      "sha256": "387da392c8a04b5245535a0847b31d8ded3667b5390d1aa50b27de4655feb394",
-      "size": 9486882
+      "sha256": "3a8b5e4dcd375841103604da036f3144ca654979bbf1da95f4e6214c902d50e0",
+      "size": 9488797
     },
     "PROJECT_RULES.md": {
       "sha256": "bd684a72b5f7e636dc2fd13cddeeca08467de287414478539c25983c58119390",
@@ -120,8 +120,8 @@
       "size": 3774
     },
     "scripts/command-center-ui-smoke.mjs": {
-      "sha256": "b9174a1a62cb22ec69a634a9e6cfa240dc6f5dcc1e3e60eb233e5d07d2bf606c",
-      "size": 5996
+      "sha256": "cc15509daa05c7da894845cdab042b628346c1e506aee3d4b8c8e9550718fa64",
+      "size": 6713
     },
     "scripts/android-static-smoke.mjs": {
       "sha256": "04695d3ea0aec2a63f17fab6f9788284ea830730985774bf23e053b9eb2bf1b3",
