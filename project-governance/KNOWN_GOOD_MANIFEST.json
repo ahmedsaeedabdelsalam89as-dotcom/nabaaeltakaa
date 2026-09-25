@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "project": "Naba Fleet System",
-  "createdAt": "2026-09-25T13:08:08.026Z",
+  "createdAt": "2026-09-25T13:45:45.709Z",
   "files": {
     "src/index.html": {
       "sha256": "97ed665cb31d6755210df14061e3e708b12694b123e2d815d5e0e7eaa9c8eca8",
@@ -56,8 +56,8 @@
       "size": 1775
     },
     "src-tauri/Cargo.lock": {
-      "sha256": "240d62f456fcabc6cc22b04a06534c2e969d404890b33f3492a117523c1d044f",
-      "size": 127059
+      "sha256": "d6f8e8f3bbb556723a24154abdf27866f4e9e9bcdbbab0ad08d453e0c33f2194",
+      "size": 141142
     },
     "src-tauri/tauri.conf.json": {
       "sha256": "902df83028000fc2bade4c6fe3e04dc26ef836407fbc29954449f06aa12cc3b4",
@@ -116,8 +116,8 @@
       "size": 1073
     },
     ".github/workflows/security-deep.yml": {
-      "sha256": "557832d634f5c56194475b5b0e48297b90aef46980ad4743560e15a76e7239a3",
-      "size": 1030
+      "sha256": "68fb90845c1c026f971151d906eaf444f6d97c08c690d9741a89137feba53f5e",
+      "size": 2039
     },
     "scripts/naba-code-guardian.mjs": {
       "sha256": "ce99543516aedef86d6b5633fbded4203b26c1d42bb1395948bb5e2cf534e21b",
