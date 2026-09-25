@@ -1,15 +1,15 @@
 name: Build Android Fleet App
 
+# عطل حقيقي مُكتشَف بالمراجعة (2026-09-25): كانت هذه أول وآخر مرة يوجد فيها `paths:` فى أي من أوامر
+# push بمستودعنا — كل تحديث بعدها كان يمر عبر دمج حزمة (apply-naba-update.yml: git fetch + merge
+# --no-edit + push) فينتج كوميت دمج (merge commit) بأبوين، وGitHub لا يُدرِج كوميتات الدمج ضمن قائمة
+# "commits" الخاصة بحدث push (سلوك موثَّق من GitHub)، فتصبح قائمة الملفات المتغيّرة لفلترة `paths:`
+# فارغة عمليًا — أى أن هذا الأمر لم يكن يعمل تلقائيًا إطلاقًا بعد أول دمج حزمة، فقط عبر التشغيل اليدوي
+# (workflow_dispatch). باقى أوامر push فى المستودع (validate.yml, build-windows.yml,
+# security-deep.yml) لا تستخدم `paths:` أصلاً ولذلك لم تتأثر — نفس النمط الآمن يُطبَّق هنا الآن.
 on:
   push:
     branches: [main]
-    paths:
-      - 'fleet-android/**'
-      - 'src/index.html'
-      - 'src/modules/**'
-      - 'src/styles/**'
-      - 'version.json'
-      - '.github/workflows/build-android.yml'
   workflow_dispatch: {}
 
 jobs:
