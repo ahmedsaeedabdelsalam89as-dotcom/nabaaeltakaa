@@ -1,11 +1,11 @@
 {
   "schema": 1,
   "project": "Naba Fleet System",
-  "createdAt": "2026-09-25T16:22:47.098Z",
+  "createdAt": "2026-09-25T16:56:21.139Z",
   "files": {
     "src/index.html": {
-      "sha256": "ad441e0474a2aebbb5a61966fbf2d9595e60cdd10bdfbb1a69a815b616409394",
-      "size": 9440123
+      "sha256": "849b3db7e6aaaef6da4800b22bc76c403a0d2e38eaa606e92a78730268b19edc",
+      "size": 9453720
     },
     "PROJECT_RULES.md": {
       "sha256": "bd684a72b5f7e636dc2fd13cddeeca08467de287414478539c25983c58119390",
@@ -19,33 +19,13 @@
       "sha256": "0165a3dd830428ffea5af28b63afbf565405bffc2f01c8780f07d73edb4b0d65",
       "size": 15055
     },
-    "src/modules/naba-unified-sync.js": {
-      "sha256": "5d5f9564a9b683d44acf0e085720be8843aac5855ff7b0dd1fa5b95a521d4d02",
-      "size": 3392
-    },
-    "src/modules/naba-peer-protocol.js": {
-      "sha256": "905a85fc437eb7196fb004988afeb75f5b07a2eb07cd8ec651f7c9e3deedfaf9",
-      "size": 737
-    },
-    "src/modules/schema-gate.js": {
-      "sha256": "8ff3d45b30fbceac570153dd6b3e369d6067fb5b3d07be4751279452a667e974",
-      "size": 412
-    },
-    "src/modules/naba-windows-sync.js": {
-      "sha256": "7c8cd351c390635c6a89626845f38a08ab517eb51938a48b70429de41d2b7c42",
-      "size": 2269
-    },
-    "src/modules/naba-sync-center.js": {
-      "sha256": "0258d2b0b6fa9f2b116076a21d82f833c14d64bdd7fd2760a97dbc4ba1fa3a15",
-      "size": 4068
-    },
     "src/styles/naba-workspace.css": {
-      "sha256": "89b9fd95d4ffb98a6e80813dfc1f6e92e77266f3d28dfde5309abb22abddb8b5",
-      "size": 6952
+      "sha256": "23d2c47ebc4404cc9adeb65963bbaef023a4a4942a9ca668252e14edae5a5b41",
+      "size": 5334
     },
     "src-tauri/src/lib.rs": {
-      "sha256": "e1e7cdf4ea8ffef713ff0d08edf04cb7fa1818a60f8df28f76823968f374773c",
-      "size": 14834
+      "sha256": "a873e221cdb8131f3810fbf2b689872617e50a20d6f35013acf634ae05ccbac7",
+      "size": 14673
     },
     "src-tauri/src/main.rs": {
       "sha256": "761ff104a98a1bbd1fa884ab17eabc7a68fc1ded68d34885eb61c3aa468a48ab",
@@ -72,8 +52,8 @@
       "size": 323
     },
     "package.json": {
-      "sha256": "ae95bf540c2733c82fa6784e35075eda83e96e3f6fc92f02af161a3ba81b0225",
-      "size": 2442
+      "sha256": "07ee5c7fadb95a86eb88dc135ac150927453caec55e473718ef5fd41a5f0a8e7",
+      "size": 2279
     },
     "package-lock.json": {
       "sha256": "e718f284a6b6dbd758150a6431c375594c80b0e9b353665198dbc9e7ed16de6c",
@@ -120,8 +100,8 @@
       "size": 3064
     },
     "scripts/naba-code-guardian.mjs": {
-      "sha256": "ce99543516aedef86d6b5633fbded4203b26c1d42bb1395948bb5e2cf534e21b",
-      "size": 5189
+      "sha256": "5a9a760bf2ed2e34eed8ab9940c2765e9de5701c35497115264fdb541f9e2a9c",
+      "size": 5010
     },
     "scripts/preflight.mjs": {
       "sha256": "70bf5e443ebd1ec2b188ca1b16576c142e8e5f02544719d245f0a53c2a8762fa",
@@ -136,8 +116,8 @@
       "size": 7388
     },
     "scripts/guardian-selftest.mjs": {
-      "sha256": "c7222b4e02a5316af9d06d494a9f8d6fd743a9d059641824aa232bb12cec52f5",
-      "size": 3953
+      "sha256": "9fb707ca29aafd51ffa117226b6ecf790d698fca5005e2413fef0fbc0bdb7038",
+      "size": 3774
     },
     "scripts/command-center-ui-smoke.mjs": {
       "sha256": "b9174a1a62cb22ec69a634a9e6cfa240dc6f5dcc1e3e60eb233e5d07d2bf606c",
@@ -156,8 +136,8 @@
       "size": 2996
     },
     "scripts/control-integrity-1138.mjs": {
-      "sha256": "a3bd33f52474c0c75f2af79e9b255c4dd3dfc11304dddbc98c011ea7fb899605",
-      "size": 2592
+      "sha256": "fd3724851eabef0859dea28980cd388e6fa6ac6aa92177e34d109ece8139eaa0",
+      "size": 2590
     },
     "scripts/independent-assurance-1139.mjs": {
       "sha256": "ca8c2fff964963ef68844546d11fe313f9ad50576fa9dbed8cc555a42141c23c",

@@ -14,19 +14,3 @@ nav.sidebar:not(.show-legacy-nav)>button[data-page]:not(.workspace-nav-button),n
 .naba-context-card-spaced{margin-top:12px;}
 .naba-context-confidence{margin-top:5px;}
 .naba-ai-result-pre{white-space:pre-wrap;max-height:45vh;overflow:auto;}
-
-/* NABA 1.13.8 CSP-safe sync center */
-#naba-sync-center-112{position:fixed;left:14px;bottom:14px;z-index:2147483000;font-family:system-ui,-apple-system,"Segoe UI",Tahoma,Arial,sans-serif}
-#naba-sync-center-112 .nsc-btn{border:0;border-radius:999px;padding:10px 15px;font-weight:800;cursor:pointer;box-shadow:0 6px 22px #0003;background:#0d1f3f;color:#fff}
-#naba-sync-center-112 .nsc-panel{display:none;width:min(360px,calc(100vw - 28px));margin-bottom:9px;background:#fff;color:#132238;border:1px solid #d9e1ea;border-radius:16px;box-shadow:0 14px 38px #0004;overflow:hidden}
-#naba-sync-center-112.open .nsc-panel{display:block}
-#naba-sync-center-112 .nsc-head{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;background:#0d1f3f;color:#fff;font-weight:900}
-#naba-sync-center-112 .nsc-body{padding:12px 14px;font-size:13px}
-#naba-sync-center-112 .nsc-row{margin:8px 0;padding:8px 10px;background:#f6f8fb;border-radius:10px;overflow-wrap:anywhere}
-#naba-sync-center-112 .nsc-k{display:block;font-size:11px;color:#617086;margin-bottom:3px}
-#naba-sync-center-112 .nsc-actions{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:10px}
-#naba-sync-center-112 button{font:inherit}
-#naba-sync-center-112 .nsc-act{border:1px solid #ccd6e0;border-radius:9px;background:#fff;padding:8px;cursor:pointer;font-weight:700;color:#18304f}
-#naba-sync-center-112 .nsc-status[data-ok="1"]{color:#087a42;font-weight:800}
-#naba-sync-center-112 .nsc-status[data-ok="0"]{color:#a43b2c;font-weight:800}
-#naba-sync-center-112 .nsc-token{font-family:ui-monospace,Consolas,monospace;letter-spacing:.3px}
