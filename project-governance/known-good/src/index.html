@@ -1491,7 +1491,10 @@ table tr:hover td{background:rgba(201,162,39,.06);}
         <div class="toolbar" data-naba-style="margin-top:8px;">
           <button type="button" class="btn primary" data-naba-onclick="saveWhatsAppSettings()">💾 حفظ الإعدادات</button>
           <button type="button" class="btn secondary" data-naba-onclick="fetchWhatsAppMessages()">🔄 جلب أحدث الرسائل</button>
+          <button type="button" class="btn secondary" data-naba-onclick="fetchWhatsAppGroupsList()">📂 جلب قايمة الجروبات الحقيقية</button>
         </div>
+        <p class="small-note" data-naba-style="margin-top:6px;">مش متأكد من رقم الجروب الصح؟ دوس "جلب قايمة الجروبات الحقيقية" (يحتاج apiUrl/idInstance/التوكن محفوظين أو مكتوبين فوق) — هيجيبلك كل الجروبات اللي رقمك عضو فيها بأسمائها الحقيقية، ودوس "➕ إضافة" جنب الصح.</p>
+        <div id="waGroupsListBox" data-naba-style="margin-top:6px;"></div>
         <div id="waSettingsStatus" class="small-note" data-naba-style="margin-top:8px;"></div>
       </div>
 
@@ -10571,6 +10574,72 @@ function renderPredictiveDispatch(){
 
   // 🔁 2026-09-25: بيجلب من كل جروب مضاف على حدة (وليس جروب واحد بس) ويدمج النتائج فى قايمة واحدة — كل
   // رسالة بترجع من Green API ومعاها chatId بتاعها أصلًا، فمفيش لازمة نضيف وسم يدوي لمعرفة مصدرها.
+  // 🆕 2026-09-25: تشخيص حقيقي اكتشفناه مع أحمد — كل الرسائل الراجعة من getChatHistory كانت "outgoing" رغم
+  // تأكيده إن رقمه عضو فعلي فى الجروب ويستحيل يبعت 50 رسالة بلا رد. السبب الأرجح: رقم الجروب (chatId) المُدخَل
+  // يدويًا مش هو نفسه جروب "الحركة" الحقيقي. الحل: نجيب قايمة الجروبات الحقيقية من حساب واتساب المربوط نفسه
+  // (عبر getContacts) ونعرضها بأسمائها الحقيقية، عشان يختار الصح بدل ما ينسخ رقم غلط من مكان تاني.
+  function validateWhatsAppConnection(s) {
+    try {
+      var u = new URL(String((s && s.apiUrl) || ''));
+      var host = String(u.hostname || '').toLowerCase();
+      var validHost = /^[a-z0-9-]+\.api\.greenapi\.com$/.test(host);
+      if (u.protocol !== 'https:' || !validHost || (u.port && u.port !== '443') || u.username || u.password || (u.pathname && u.pathname !== '/') || u.search || u.hash) return {ok:false,message:'رابط Green API غير مسموح'};
+      if (!/^\d{4,20}$/.test(String(s.idInstance || ''))) return {ok:false,message:'معرّف Instance غير صالح'};
+      if (String(s.apiToken || '').length < 8 || String(s.apiToken || '').length > 512) return {ok:false,message:'توكن Green API غير صالح'};
+      return {ok:true,apiUrl:u.origin};
+    } catch (_) { return {ok:false,message:'رابط Green API غير صالح'}; }
+  }
+  function waFetchContactsRaw(conn, s) {
+    var url = conn.apiUrl + '/waInstance' + encodeURIComponent(s.idInstance) + '/getContacts/' + encodeURIComponent(s.apiToken);
+    return fetchWithTimeout(url, { method: 'GET' }, 15000).then(function (res) {
+      if (!res.ok) throw new Error('استجابة غير ناجحة (' + res.status + ')');
+      return readResponseJsonBounded(res, 4 * 1024 * 1024);
+    });
+  }
+  function fetchWhatsAppGroupsList() {
+    var box = $('#waGroupsListBox'), status = $('#waSettingsStatus');
+    var s = {
+      apiUrl: ($('#waApiUrl').value || '').trim().replace(/\/+$/, ''),
+      idInstance: ($('#waIdInstance').value || '').trim(),
+      apiToken: ($('#waApiToken').value || '').trim() || NABA_WA_TOKEN_CACHE
+    };
+    if (!s.apiUrl || !s.idInstance || !s.apiToken) { showToast('⚠ أدخل apiUrl وidInstance وapiTokenInstance أولًا (أو احفظهم مرة واحدة قبل كده)'); return; }
+    var conn = validateWhatsAppConnection(s);
+    if (!conn.ok) { showToast('⚠ ' + conn.message); return; }
+    if (status) status.textContent = 'جارٍ جلب قايمة الجروبات...';
+    waFetchContactsRaw(conn, s).then(function (list) {
+      if (status) status.textContent = '';
+      var groups = (Array.isArray(list) ? list : []).filter(function (c) {
+        return c && (c.type === 'group' || /@g\.us$/i.test(String(c.id || '')));
+      });
+      if (!box) return;
+      if (!groups.length) { box.innerHTML = '<p class="small-note">لم يُعثر على أي جروبات فى هذا الحساب. تأكد إن رقم الواتساب المربوط بالـInstance عضو فعليًا فى الجروب المطلوب.</p>'; return; }
+      box.innerHTML = '<p class="small-note"><b>' + groups.length + '</b> جروب اتلقى فى حسابك. دوس "➕ إضافة" جنب الجروب الصح:</p>' +
+        groups.map(function (g) {
+          var gid = String(g.id || '');
+          var name = escapeHtml(String(g.name || gid || 'بدون اسم'));
+          return '<div class="toolbar wa-group-row" data-naba-style="align-items:center;gap:8px;margin-top:4px;">' +
+            '<span data-naba-style="flex:1;">' + name + ' <span class="small-note" dir="ltr">(' + escapeHtml(gid) + ')</span></span>' +
+            '<button type="button" class="btn secondary wa-group-add-btn" data-gid="' + escapeHtml(gid) + '">➕ إضافة</button>' +
+            '</div>';
+        }).join('');
+      $all('.wa-group-add-btn', box).forEach(function (btn) { btn.addEventListener('click', function () { addWhatsAppGroupId(btn.dataset.gid); }); });
+    }).catch(function (err) {
+      if (status) status.textContent = '';
+      showToast('❌ تعذَّر جلب قايمة الجروبات: ' + err.message);
+    });
+  }
+  window.fetchWhatsAppGroupsList = fetchWhatsAppGroupsList;
+  function addWhatsAppGroupId(gid) {
+    var ta = $('#waGroupChatIds');
+    if (!ta || !gid) return;
+    var lines = (ta.value || '').split(/\r?\n/).map(function (l) { return l.trim(); }).filter(Boolean);
+    if (lines.indexOf(gid) === -1) lines.push(gid);
+    ta.value = lines.join('\n');
+    showToast('✅ اتضاف الجروب. متنساش تدوس "حفظ الإعدادات" عشان يتحفظ');
+  }
+  window.addWhatsAppGroupId = addWhatsAppGroupId;
+
   function waFetchChatHistoryOne(waValidation, s, chatId, count) {
     var url = waValidation.apiUrl + '/waInstance' + encodeURIComponent(s.idInstance) + '/getChatHistory/' + encodeURIComponent(s.apiToken);
     return fetchWithTimeout(url, {
@@ -20730,6 +20799,13 @@ function computeMaintenanceOptimization(){var f=computePredictiveFailureEngine()
   window.connectNabaEmailSession=connectNabaEmailSession;window.searchNabaEmail=searchNabaEmail;window.selectNabaEmail=selectNabaEmail;window.prepareNabaEmailReply=prepareNabaEmailReply;window.sendNabaEmailReply=sendNabaEmailReply;
   window.NabaEmailIntelligence={version:NABA_EMAIL_VERSION,deepContext:nabaEmailDeepContext,search:searchNabaEmail,prepareReply:prepareNabaEmailReply};
   var VERSION_LOG = [
+    {date:'2026-09-25',version:'1.46.0-whatsapp-groups-list',title:'📂 قايمة الجروبات الحقيقية فى صفحة ربط واتساب — يحل مشكلة اكتُشفت فعليًا مع أحمد',items:[
+      'العرض الحقيقي: أحمد أكد إن رقم واتساب المربوط هو رقمه شخصيًا وعضو فعليًا فى جروب "الحركة"، ومستحيل يبعت 50 رسالة/فويس بلا رد واحد — لكن "جلب أحدث الرسائل" كان بيرجع 0 رسالة واردة (incoming) من أصل 50 كل مرة',
+      'السبب الأرجح (مؤكَّد بالتشخيص المدمج أصلًا فى البرنامج): معرّف الجروب (chatId) المكتوب يدويًا فى الخانة مش هو نفسه جروب "الحركة" الحقيقي — كل الـ50 رسالة الراجعة كانت "outgoing" (صادرة من نفس الرقم)، يعني الجروب المتصل بيه مختلف عن الجروب المقصود',
+      'الحل: زرار جديد "📂 جلب قايمة الجروبات الحقيقية" فى صفحة ربط واتساب — يستدعي Green API (getContacts) ويجيب كل الجروبات اللي الرقم المربوط عضو فيها بأسمائها الحقيقية، مع زرار "➕ إضافة" جنب كل جروب يضيفه تلقائيًا لخانة المعرّفات — بدل نسخ رقم غلط يدويًا من مكان تاني',
+      'دالتان جديدتان: validateWhatsAppConnection (فحص apiUrl/idInstance/token بدون شرط وجود جروبات مُدخَلة مسبقًا)، waFetchContactsRaw (GET getContacts)، وربط أزرار ديناميكية بنفس أسلوب الأمان المتّبع فى الكود (data-* + addEventListener، لا onclick مباشر)',
+      'التحقق: control-integrity-1138.mjs ناجح (0 أزرار ناقصة type=button، 0 مُعالجات أحداث نصية)، preflight ناجح'
+    ]},
     {date:'2026-09-25',version:'1.46.0-lan-sync-retired',title:'🗑️ إزالة "مزامنة الواي فاي المحلي" نهائيًا — قرار خبير مُوثَّق، لا تراجع عنه',items:[
       'السبب: هذه الميزة كانت معطَّلة فعليًا من جهة الإرسال منذ بنائها (enqueue() فى naba-unified-sync.js لم يكن يُستدعى فى أي مكان بالكود إطلاقًا — تأكيد بالبحث الشامل، لا تخمينًا)، وحتى لو اشتغلت لاحقًا فهدفها الوحيد (ربط الموبايل بالكمبيوتر) محقَّق فعليًا ومُختبَر اليوم عبر مزامنة Firebase السحابية العاملة',
       'بناء نظام اتصال مباشر (Windows DNS-SD + خادم TCP محلي فى naba_peer.rs) محتاج اختبار حقيقي لجهازين فعليين على نفس الشبكة — غير متاح للتحقق فى بيئة العمل الحالية، فالإبقاء عليه معطَّلًا/نصف مبني كان بيزوّد التعقيد وسطح الهجوم بلا أي فائدة فعلية',
