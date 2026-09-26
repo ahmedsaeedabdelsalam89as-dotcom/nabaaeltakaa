@@ -17,8 +17,8 @@ const versions=[pkg.version,lock.version,lock.packages?.['']?.version,tauri.vers
 if(new Set(versions).size!==1) throw new Error('Version mismatch: '+versions.join(','));
 if(!cargoToml.includes(`version = "${pkg.version}"`)) throw new Error('Cargo.toml version mismatch');
 if(!cargoLock.includes(`name = "fleet-desktop"\nversion = "${pkg.version}"`)) throw new Error('Cargo.lock root version mismatch');
-if(pkg.version!=='1.53.0') throw new Error('Expected workspace version 1.53.0');
-if(!html.includes('— إصدار 1.53.0 — 2026-09-26')) throw new Error('Visible header version/date drift');
+if(pkg.version!=='1.54.0') throw new Error('Expected workspace version 1.54.0');
+if(!html.includes('— إصدار 1.54.0 — 2026-09-26')) throw new Error('Visible header version/date drift');
 const buildScript=read('BUILD_WINDOWS.ps1');
 for(const marker of ['npm run test:all','naba-code-guardian.mjs --verify','cargo check --manifest-path src-tauri/Cargo.toml --locked']) if(!buildScript.includes(marker)) throw new Error('Build gate missing '+marker);
 const caps=JSON.parse(read('src-tauri/capabilities/default.json'));
@@ -34,7 +34,7 @@ for(const marker of [
   'function nabaAiExecutiveThink(','function nabaAiEvidenceConflict(','hard_governance_reject','decisionState:decisionState','independentFirstPass:true','NABA_REFLECTION_VERSION=','function nabaAiReflect(','function nabaAiContinuousEval(','function nabaAiResearch(','Contrarian / Red Team','function nabaAiMultiMindBenchmark(',
   'Feasibility & Implementation Judge','function nabaAiFeasibilityScore(',"NABA_HYBRID_VERSION='2026-09-07.1'",
   'function nabaAiRouteIntelligence(','function nabaAiLocalStructuredSolve(','function nabaAiHybridSolve(',
-  'local_only','deep_research','preferZeroToken:true','externalTokens:0',"var APP_VERSION = '1.53.0'",
+  'local_only','deep_research','preferZeroToken:true','externalTokens:0',"var APP_VERSION = '1.54.0'",
   'function nabaSecureInvoke(','secure_secret_set','saveFirebaseSyncCredentials','requestId:(crypto.randomUUID'
 ]) if(!html.includes(marker)) throw new Error('Missing marker: '+marker);
 
@@ -63,5 +63,5 @@ if(!workspaceCss.includes('.naba-palette')||!workspaceCss.includes('.naba-contex
 
 const m=html.match(/<script[^>]+id=["']data-bundle["'][^>]*>([\s\S]*?)<\/script>/i); if(!m) throw new Error('data-bundle missing');
 const sha=crypto.createHash('sha256').update(m[1].trim()).digest('hex');
-if(sha!=='151a6ffb6bd1a3ea8745486690530e473caebc54878dbf72ab5e1bf80eda0a09') throw new Error('data-bundle changed');
+if(sha!=='29e5669ffb82434df1d6eb450608afa91eaa5dfef1b49c777b0f2c22b43dcbc8') throw new Error('data-bundle changed');
 console.log('PREFLIGHT_OK',pkg.version,sha);

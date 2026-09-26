@@ -1,5 +1,5 @@
 {
-  "version": "1.53.0",
+  "version": "1.54.0",
   "released_at": "2026-09-26",
-  "notes": "Merged the 2026-09-26 Tam driving-authorizations export (68 authorizations, 22 active) by vehicle serial number: active authorization + history stored per vehicle; drivers completed for 5 vehicles where the recorded driver was empty/non-driver or site roster agreed; 4 conflicts flagged for review. Idempotent once-per-device migration."
+  "notes": "Official distribution of all 92 vehicles to the 7 current projects per project plans, plus admin (العمومية) and workshop; 3 cross-plan duplicates resolved with evidence; worksite set to official project name with previous value kept. Idempotent once-per-device migration."
 }
