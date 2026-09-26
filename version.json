@@ -1,5 +1,5 @@
 {
-  "version": "1.50.2",
+  "version": "1.51.0",
   "released_at": "2026-09-26",
-  "notes": "Extended the v1.50.1 plate-alias fix to the rest of the vehicle-document surfaces: the 7-slot document-type grid shown at the very bottom of the vehicle dashboard (estmara/work card/driver card/insurance/inspection/violation/other), the field-level document link on the vehicle info grid (e.g. clicking the insurance field opens its scanned document), the copy-summary text, and the Excel export — all four previously matched documents to a vehicle by strict plate equality and would miss any document saved under an old, now-merged plate number. All four now resolve through the vehicle's current plate and its previous_plate_numbers aliases, so every document tied to a vehicle (by plate history) shows up consistently everywhere in the dashboard. Added a 5th correctness test verifying the document-type grid shows documents from both the current and a merged old plate, and that the field-to-document link resolves an old-plate document correctly."
+  "notes": "Adopted the 2026-09-26 HR staff roster as the single source of truth for actual drivers: 49 actual drivers (41 sponsored incl. 2 on leave + 8 rental), 21 non-driver/inactive records moved to DRIVERS_ARCHIVE with reasons, 4 duplicate names merged. Added official TGA operation cards for 7021/7022. Same idempotent engine runs once per device on saved state."
 }
