@@ -11,6 +11,6 @@ const checks=[
  ['external css',/styles\/naba-workspace\.css/.test(html)&&css.includes('.naba-palette')],
  ['hybrid route',html.includes('window.NabaFleetAI.hybridSolve=')],
  ['legacy preserved',/data-page="fuelintel"/.test(html)&&/data-page="opsdecision"/.test(html)&&/data-page="whatsappops"/.test(html)],
- ['version',html.includes("APP_VERSION = '1.49.0'")||html.includes("APP_VERSION='1.49.0'")]
+ ['version',html.includes("APP_VERSION = '1.50.0'")||html.includes("APP_VERSION='1.50.0'")]
 ];
 for(const [n,ok] of checks){console.log((ok?'PASS':'FAIL')+' '+n);if(!ok)process.exitCode=1}
