@@ -1,5 +1,5 @@
 {
-  "version": "1.56.1",
+  "version": "1.56.2",
   "released_at": "2026-09-26",
-  "notes": "Prevent double counting: the cumulative Dries report 21/07-26/09 overlapped two previously imported weeks; rows converted to net 03/08-26/09 with originals preserved; 5 contradictory rows zeroed and flagged. Idempotent once-per-device migration."
+  "notes": "Tam authorization for مد فرهد علي (2582684664) on أ ص أ 5657 (2026-09-26..2027-09-15); assigned as its driver; old 1848 authorization flagged for cancellation. Idempotent once-per-device migration."
 }

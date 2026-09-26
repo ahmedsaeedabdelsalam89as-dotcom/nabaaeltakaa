@@ -1,6 +1,6 @@
 [package]
 name = "fleet-desktop"
-version = "1.56.1"
+version = "1.56.2"
 description = "A Tauri App"
 authors = ["you"]
 edition = "2021"
