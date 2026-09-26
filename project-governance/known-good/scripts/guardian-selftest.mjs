@@ -38,6 +38,7 @@ const critical=[
  'scripts/guardian-selftest.mjs',
  'scripts/command-center-ui-smoke.mjs',
  'scripts/engine-correctness-suite.mjs',
+ 'scripts/fleet-duplicate-vehicle-guard.mjs',
  'scripts/android-static-smoke.mjs',
  'scripts/xss-regression-smoke.mjs',
  'scripts/windows-build-gate-smoke.mjs',
