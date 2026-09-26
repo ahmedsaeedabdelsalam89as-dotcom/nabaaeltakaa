@@ -172,4 +172,63 @@ function makeSandbox(extraFleet, extraUnregistered) {
   console.log('ENGINE_CORRECTNESS_DATA_LOGIC_ISSUES_OK', { totalIssues: issues.length, byCategory });
 }
 
-console.log('ENGINE_CORRECTNESS_SUITE_OK', { enginesCovered: 2, note: 'قابل للتوسعة لبقية الـ38 محرك بنفس النمط — الدفعة القادمة: computeMaintenanceTracking, computeCostIntelligence, computeDriverPerformance' });
+// =============================================================================
+// 3) computePredictiveFailureEngine — منطق MTBS الجديد (2026-09-26، بطلب أحمد صراحة):
+//    تنبؤ حقيقي مبني على الفاصل الزمني التاريخي الفعلي لكل مركبة (لا عتبات عامة فقط).
+//    مركبة V1: 3 سجلات صيانة مغلقة بفواصل ثابتة معروفة (30 يوم بين كل سجل والتالي) —
+//    آخر صيانة كانت منذ 40 يومًا، أي تجاوزت الفاصل المعتاد (30 يوم) بمقدار 10 أيام.
+//    مركبة V2: سجل صيانة واحد فقط — يجب ألا يُفعَّل منطق MTBS إطلاقًا (يحتاج سجلَّين فأكثر).
+// =============================================================================
+{
+  const ctx = makeSandbox(
+    [
+      { plate: 'V1', year: 2022 },
+      { plate: 'V2', year: 2022 }
+    ],
+    []
+  );
+  const daysAgo = (n) => new Date(Date.now() - n * 86400000).toISOString();
+  ctx.APP.MAINTENANCE = [
+    { plate: 'V1', date: daysAgo(100), isClosed: true },
+    { plate: 'V1', date: daysAgo(70), isClosed: true },
+    { plate: 'V1', date: daysAgo(40), isClosed: true },
+    { plate: 'V2', date: daysAgo(10), isClosed: true }
+  ];
+  ctx.APP.FAULT_REPORTS = [];
+  ctx.APP.ANALYSIS_NOTES = [];
+  ctx.APP.OIL_CHANGES = [];
+  ctx.nabaClearEngineError = () => {};
+  ctx.nabaRecordEngineError = (name, e) => String((e && e.message) || e);
+  ctx.nowIso = () => new Date().toISOString();
+  ctx.computeFuelIntelligence = () => ({ rows: [] });
+
+  vm.runInContext(extractFunction('computePredictiveFailureEngine'), ctx);
+  const pf = vm.runInContext('computePredictiveFailureEngine()', ctx);
+
+  assert(pf.degraded !== true, 'predictive engine must not be degraded with a working fuel stub');
+  const v1 = pf.rows.find(r => r.plate === 'V1');
+  const v2 = pf.rows.find(r => r.plate === 'V2');
+  assert(v1, 'V1 row must exist');
+  assert(v2, 'V2 row must exist');
+
+  // حساب يدوي مستقل: intervals=[30,30] → mtbsDays=30؛ daysSinceLastService≈40 → pctOfInterval≈1.33≥1
+  // → score+=25 (evidence "تجاوزت")؛ predictedDaysToNext=round(30-40)=-10؛
+  // confidence=20(base)+15(ms.length>0)+10(mtbsDays!==null)=45؛ horizon يجب أن يذكر التأخر.
+  assert(v1.mtbsDays === 30, 'V1 mtbsDays must equal 30 (mean of two 30-day intervals), got ' + v1.mtbsDays);
+  assert(v1.predictedDaysToNext === -10, 'V1 predictedDaysToNext must equal -10 (30 - 40), got ' + v1.predictedDaysToNext);
+  assert(v1.score === 25, 'V1 score must equal exactly 25 (MTBS overdue contribution only), got ' + v1.score);
+  assert(v1.confidence === 45, 'V1 confidence must equal 45 (20 base + 15 has-maintenance + 10 has-mtbs), got ' + v1.confidence);
+  assert(/متأخرة عن موعدها المتوقع/.test(v1.horizon), 'V1 horizon must state it is overdue per its own historical pattern, got: ' + v1.horizon);
+  assert(v1.evidence.some(e => /تجاوزت الفاصل الزمني المعتاد/.test(e)), 'V1 evidence must include the MTBS-overdue explanation');
+
+  assert(v2.mtbsDays === null, 'V2 (single maintenance record) must NOT activate MTBS — needs ≥2 records, got ' + v2.mtbsDays);
+  assert(v2.predictedDaysToNext === null, 'V2 predictedDaysToNext must stay null with insufficient history');
+  assert(v2.confidence === 35, 'V2 confidence must equal 35 (20 base + 15 has-maintenance, no MTBS bonus), got ' + v2.confidence);
+
+  console.log('ENGINE_CORRECTNESS_PREDICTIVE_FAILURE_MTBS_OK', {
+    v1: { mtbsDays: v1.mtbsDays, predictedDaysToNext: v1.predictedDaysToNext, score: v1.score, confidence: v1.confidence, horizon: v1.horizon },
+    v2: { mtbsDays: v2.mtbsDays, confidence: v2.confidence }
+  });
+}
+
+console.log('ENGINE_CORRECTNESS_SUITE_OK', { enginesCovered: 3, note: 'قابل للتوسعة لبقية الـ38 محرك بنفس النمط — الدفعة القادمة: computeMaintenanceTracking, computeCostIntelligence, computeDriverPerformance' });
