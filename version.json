@@ -1,5 +1,5 @@
 {
-  "version": "1.55.0",
+  "version": "1.56.0",
   "released_at": "2026-09-26",
-  "notes": "Full data cleanup: 52 date conflicts resolved from Tam Hijri dates; insurance year corrected for 4 vehicles from 2026 certificates; heavy-vehicle driver field aligned with active drivers (16); owner names unified (13 variants -> 5) with Tam-confirmed branch ownership for 40 vehicles; 466 integrity findings closed with written reasons, 27 left for human review. Idempotent once-per-device migration."
+  "notes": "Imported Al-Dries fuel report 2026-07-21..2026-09-26 (88 rows, 123,262.12 L, 225,057.38 SAR incl. VAT; totals reconcile), all plates matched incl. 7 via old plates; new Tam authorization for مظهر on 1848. Idempotent once-per-device migration."
 }
