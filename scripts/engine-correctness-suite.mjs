@@ -231,4 +231,51 @@ function makeSandbox(extraFleet, extraUnregistered) {
   });
 }
 
-console.log('ENGINE_CORRECTNESS_SUITE_OK', { enginesCovered: 3, note: 'قابل للتوسعة لبقية الـ38 محرك بنفس النمط — الدفعة القادمة: computeMaintenanceTracking, computeCostIntelligence, computeDriverPerformance' });
+// =============================================================================
+// 4) buildFleetMap + buildVehicleDocsLibraryHtml — مطابقة اللوحات القديمة (previous_plate_numbers)
+//    بعد توحيد المركبات المكررة (v1.50.0، بطلب أحمد صراحة). مركبة V-NEW توحّدت من مركبتين قديمتين
+//    (V-OLD-1, V-OLD-2) — أي مستند اتحفظ قبل التوحيد برقم لوحة قديم لازم يفضل يظهر فى مكتبة
+//    مستندات المركبة الحالية، ولازم buildFleetMap يحل أي مرجع قديم للوحة الحالية.
+// =============================================================================
+{
+  // ملاحظة: normPlate يستخرج فقط الحروف العربية ([؀-ۿ]) والأرقام — لوحات حقيقية، مش لاتينية.
+  const PLATE_NEW = 'ن ب أ 1001';
+  const PLATE_OLD_1 = 'ن ب أ 1002';
+  const PLATE_OLD_2 = 'ن ب أ 1003';
+  const PLATE_UNRELATED = 'ن ب أ 9999';
+  const ctx = makeSandbox(
+    [
+      { plate: PLATE_NEW, previous_plate_numbers: [PLATE_OLD_1, PLATE_OLD_2] },
+      { plate: PLATE_UNRELATED }
+    ],
+    []
+  );
+  ctx.escapeHtml = (s) => String(s || '');
+  ctx.htmlJsArg = (v) => JSON.stringify(String(v || ''));
+  ctx.verificationBadge = () => '';
+  ctx.APP.DOCUMENTS_LIBRARY = [
+    { id: 'd1', plate: PLATE_NEW, name: 'مستند بعد التوحيد' },      // مستند حالي بالرقم الجديد
+    { id: 'd2', plate: PLATE_OLD_1, name: 'مستند قبل التوحيد ١' },   // مستند قديم — أول لوحة سابقة
+    { id: 'd3', plate: PLATE_OLD_2, name: 'مستند قبل التوحيد ٢' },   // مستند قديم — ثانى لوحة سابقة
+    { id: 'd4', plate: PLATE_UNRELATED, name: 'مستند مركبة أخرى' }   // يجب ألا يظهر إطلاقًا عند V-NEW
+  ];
+
+  vm.runInContext(extractFunction('normPlate'), ctx);
+  vm.runInContext(extractFunction('buildFleetMap'), ctx);
+  vm.runInContext(extractFunction('buildVehicleDocsLibraryHtml'), ctx);
+
+  const fleetMap = vm.runInContext('buildFleetMap()', ctx);
+  assert(fleetMap[vm.runInContext('normPlate(' + JSON.stringify(PLATE_OLD_1) + ')', ctx)] === PLATE_NEW, 'buildFleetMap must resolve old plate 1 -> current plate');
+  assert(fleetMap[vm.runInContext('normPlate(' + JSON.stringify(PLATE_OLD_2) + ')', ctx)] === PLATE_NEW, 'buildFleetMap must resolve old plate 2 -> current plate');
+  assert(fleetMap[vm.runInContext('normPlate(' + JSON.stringify(PLATE_NEW) + ')', ctx)] === PLATE_NEW, 'buildFleetMap must resolve current plate to itself');
+
+  const vNew = { plate: PLATE_NEW, previous_plate_numbers: [PLATE_OLD_1, PLATE_OLD_2] };
+  const htmlOut = vm.runInContext('buildVehicleDocsLibraryHtml(' + JSON.stringify(vNew) + ')', ctx);
+  assert(htmlOut.includes('مكتبة مستندات المركبة (3)'), 'expected exactly 3 documents (current + both old-plate aliases) in the vehicle doc library, got: ' + (htmlOut.match(/مكتبة مستندات المركبة \((\d+)\)/) || [])[0]);
+  assert(htmlOut.includes('مستند بعد التوحيد') && htmlOut.includes('مستند قبل التوحيد ١') && htmlOut.includes('مستند قبل التوحيد ٢'), 'all three documents (current + both merged-old-plate aliases) must be listed');
+  assert(!htmlOut.includes('مستند مركبة أخرى'), 'an unrelated vehicle\'s document must never leak into V-NEW\'s document library');
+
+  console.log('ENGINE_CORRECTNESS_PLATE_ALIAS_DOCS_OK', { resolvedAliases: 2, docsShown: 3, unrelatedLeaked: false });
+}
+
+console.log('ENGINE_CORRECTNESS_SUITE_OK', { enginesCovered: 4, note: 'قابل للتوسعة لبقية الـ38 محرك بنفس النمط — الدفعة القادمة: computeMaintenanceTracking, computeCostIntelligence, computeDriverPerformance' });
