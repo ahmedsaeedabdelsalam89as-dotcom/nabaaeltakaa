@@ -1,10 +1,22 @@
 {
-  "_comment": "قواعد مراقبة التتبع اليومية — تُعدَّل هنا بلا برمجة. الأوقات بتوقيت الرياض. المسافات بالكيلومتر.",
+  "_comment": "قواعد مراقبة التتبع — تُعدَّل بلا برمجة. الأوقات بتوقيت الرياض. وردية كل مركبة تُقرأ بالترتيب: vehicle_overrides ← vehicle_shifts.json (من خطط التشغيل) ← project_shift ← الوردية المرصودة التي يتعلمها المحرك من حركة المركبة الفعلية. لا تُطبَّق وردية واحدة على كل الأسطول.",
   "timezone_offset_hours": 3,
   "zones": {
-    "جدة":    {"lat": 21.50, "lng": 39.25, "radius_km": 55},
-    "أبها":   {"lat": 18.25, "lng": 42.58, "radius_km": 45},
-    "الباحة": {"lat": 20.05, "lng": 41.50, "radius_km": 65}
+    "جدة": {
+      "lat": 21.5,
+      "lng": 39.25,
+      "radius_km": 55
+    },
+    "أبها": {
+      "lat": 18.25,
+      "lng": 42.58,
+      "radius_km": 45
+    },
+    "الباحة": {
+      "lat": 20.05,
+      "lng": 41.5,
+      "radius_km": 65
+    }
   },
   "project_city": {
     "جنوب جدة (البلد)": "جدة",
@@ -17,12 +29,37 @@
     "الورشة (ورشة العقيق بالباحة)": "الباحة",
     "العمومية (الإدارة)": null
   },
-  "default_shift": {"start": "06:00", "end": "14:00", "off_days": ["Friday"], "grace_minutes": 30},
+  "default_shift": {
+    "start": "06:00",
+    "end": "14:00",
+    "off_days": [
+      "Friday"
+    ],
+    "grace_minutes": 30
+  },
   "project_shift": {},
   "vehicle_overrides": {
-    "_example": {"shift": {"start": "05:00", "end": "13:00"}, "allowed_extra_zones": [{"name": "المرمى", "lat": 0, "lng": 0, "radius_km": 5}], "skip_hours_check": false}
+    "_example": {
+      "shift": {
+        "start": "05:00",
+        "end": "13:00"
+      },
+      "allowed_extra_zones": [
+        {
+          "name": "المرمى",
+          "lat": 0,
+          "lng": 0,
+          "radius_km": 5
+        }
+      ],
+      "skip_hours_check": false
+    }
   },
-  "movement": {"min_speed_kmh": 8, "min_episode_km": 0.5, "merge_gap_minutes": 10},
+  "movement": {
+    "min_speed_kmh": 8,
+    "min_episode_km": 0.5,
+    "merge_gap_minutes": 10
+  },
   "route_learning": {
     "geohash_precision": 7,
     "window_days": 28,
@@ -32,5 +69,35 @@
     "min_deviation_minutes": 10,
     "min_deviation_km": 1.5,
     "learn_from_in_shift_only": true
+  },
+  "shift_types": {
+    "صباحي": {
+      "start": "06:00",
+      "end": "14:00"
+    },
+    "نهاري": {
+      "start": "06:00",
+      "end": "18:00"
+    },
+    "مسائي": {
+      "start": "14:00",
+      "end": "22:00"
+    },
+    "ليلي": {
+      "start": "22:00",
+      "end": "06:00"
+    },
+    "طوال اليوم": {
+      "skip_hours_check": true
+    },
+    "طوارئ": {
+      "skip_hours_check": true
+    }
+  },
+  "use_default_shift_when_unknown": false,
+  "observed_shift": {
+    "min_learning_days": 5,
+    "min_share_of_days": 0.4,
+    "grace_minutes": 60
   }
 }

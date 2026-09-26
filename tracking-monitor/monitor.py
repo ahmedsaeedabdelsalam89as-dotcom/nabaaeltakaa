@@ -25,11 +25,20 @@ DAYS_EN = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', '
 def norm(s):
     return ' '.join(str(s or '').split())
 
+_LATIN_PLATE = {'A':'ا','B':'ب','J':'ح','D':'د','R':'ر','S':'س','X':'ص','T':'ط','E':'ع','G':'ق','K':'ك','L':'ل','Z':'م','N':'ن','H':'ه','U':'و','V':'ى'}
 def plate_key(s):
-    s = norm(s).replace('أ', 'ا').replace('إ', 'ا').replace('آ', 'ا').replace('هـ', 'ه').replace('ـ', '')
-    digits = ''.join(re.findall(r'\d', s))
-    letters = ''.join(re.findall(r'[ء-ي]', s))
-    return letters + '|' + digits
+    """نفس منطق trkPlateKey في التطبيق: حروف اللوحة المفردة + أول رقم (1–4 خانات)، مستقل عن الترتيب والأقواس."""
+    s = str(s or '').translate(str.maketrans('٠١٢٣٤٥٦٧٨٩', '0123456789'))
+    s = re.sub(r'\([^)]*\)', ' ', s).replace('هـ', 'ه').replace('ـ', '')
+    s = re.sub('[أإآ]', 'ا', s).replace('ة', 'ه')
+    toks = [t for t in re.split(r'[\s.\-_/]+', s) if t]
+    single = [t for t in toks if re.fullmatch('[\u0621-\u064a]', t)]
+    letters = ''.join(single[:3]) if len(single) >= 2 else ''.join(re.findall('[\u0621-\u064a]', s))[:3]
+    if not letters:
+        letters = ''.join(_LATIN_PLATE.get(c.upper(), '') for c in re.findall('[A-Za-z]', s))[::-1]
+    dg = re.findall(r'\d{1,4}', s)
+    if not letters or not dg: return 'RAW:' + re.sub(r'[\s\-_.]', '', s).upper()
+    return letters + '|' + dg[0]
 
 def haversine_km(a, b):
     r = 6371.0088
@@ -71,9 +80,15 @@ def hm(s):
     h, m = map(int, str(s).split(':')); return h * 60 + m
 
 # ---------------------------------------------------------------- inputs
-def load_rules(path=None):
+def load_rules(path=None, shifts_path=None):
     with open(path or os.path.join(HERE, 'rules.json'), encoding='utf-8') as f:
-        return json.load(f)
+        rules = json.load(f)
+    sp = shifts_path or os.path.join(HERE, 'vehicle_shifts.json')
+    rules['vehicle_shifts'] = {}
+    if os.path.isfile(sp):
+        with open(sp, encoding='utf-8') as f:
+            rules['vehicle_shifts'] = {plate_key(k): v for k, v in (json.load(f).get('vehicles') or {}).items()}
+    return rules
 
 def load_fleet(index_html):
     """يقرأ قاعدة البيانات المضمنة في التطبيق نفسه (data-bundle) — مصدر واحد للحقيقة."""
@@ -179,16 +194,58 @@ def parse_points(raw):
     return pts
 
 # ---------------------------------------------------------------- analysis
-def shift_for(vehicle, rules):
-    s = dict(rules['default_shift'])
-    s.update(rules.get('project_shift', {}).get(vehicle.get('project') or '', {}))
-    s.update((rules.get('vehicle_overrides', {}).get(vehicle['plate'], {}) or {}).get('shift', {}))
-    return s
+def _expand_shift(spec, rules):
+    if not spec: return None
+    base = dict(rules['default_shift'])
+    t = spec.get('type')
+    if t and t in rules.get('shift_types', {}): base.update(rules['shift_types'][t]); base['type'] = t
+    base.update({k: v for k, v in spec.items() if k != 'type'})
+    return base
+
+def shift_for(vehicle, rules, observed_hours=None):
+    """يعيد (الوردية، مصدرها). الترتيب: تجاوز يدوي ← خطة التشغيل (vehicle_shifts.json) ← وردية المشروع ← المرصودة ← لا شيء."""
+    ov = (rules.get('vehicle_overrides', {}).get(vehicle['plate'], {}) or {})
+    if ov.get('shift'): return _expand_shift(ov['shift'], rules), 'تجاوز يدوي'
+    vs = rules.get('vehicle_shifts', {}).get(plate_key(vehicle['plate']))
+    if vs: return _expand_shift(vs, rules), 'خطة التشغيل'
+    ps = rules.get('project_shift', {}).get(vehicle.get('project') or '')
+    if ps: return _expand_shift(ps, rules), 'وردية المشروع'
+    if observed_hours is not None:
+        return dict(observed_hours=observed_hours, grace_minutes=rules['observed_shift']['grace_minutes'], off_days=[]), 'مرصودة من الحركة'
+    if rules.get('use_default_shift_when_unknown'): return dict(rules['default_shift']), 'افتراضية'
+    return None, 'غير محددة'
+
+def observed_hours_from(learned_hours, rules):
+    ob = rules['observed_shift']
+    days = [h for h in learned_hours.values() if isinstance(h, str) and len(h) == 24]
+    if len(days) < ob['min_learning_days']: return None
+    share = [sum(1 for d in days if d[i] == '1') / len(days) for i in range(24)]
+    hrs = [i for i in range(24) if share[i] >= ob['min_share_of_days']]
+    if not hrs: return None
+    # نافذة متصلة من أول ساعة معتادة لآخر ساعة معتادة (الوقوف وسط الدوام جزء من الدوام).
+    # لو النشاط يلتف حول منتصف الليل (وردية ليلية) نأخذ أصغر نافذة دائرية تغطي كل الساعات المعتادة.
+    best = None
+    for st in hrs:
+        span = max((h - st) % 24 for h in hrs) + 1
+        if best is None or span < best[1]: best = (st, span)
+    return [(best[0] + i) % 24 for i in range(best[1])]
+
+def shift_label(shift, source):
+    if not shift: return 'غير محددة (قيد التعلم)'
+    if shift.get('skip_hours_check'): return f"{shift.get('type', 'بدون قيد وقت')} — {source}"
+    if 'observed_hours' in shift:
+        h = shift['observed_hours']; return f"مرصودة من الحركة: من {h[0]:02d}:00 إلى {(h[-1] + 1) % 24:02d}:00" if h else 'مرصودة'
+    return f"من {shift['start']} إلى {shift['end']} — {source}"
 
 def in_shift(t, shift):
+    if shift is None or shift.get('skip_hours_check'): return True
     if DAYS_EN[t.weekday()] in shift.get('off_days', []): return False
     m, g = t.hour * 60 + t.minute, int(shift.get('grace_minutes', 0))
+    if 'observed_hours' in shift:
+        hrs = set(shift['observed_hours'])
+        return any(((m + d) // 60) % 24 in hrs for d in (-g, 0, g))
     a, b = hm(shift['start']) - g, hm(shift['end']) + g
+    a, b = a % 1440, b % 1440
     return a <= m <= b if a <= b else (m >= a or m <= b)
 
 def episodes(pts, flags, gap_min):
@@ -214,18 +271,21 @@ def moving_flags(pts, min_speed):
 
 def fmt_t(t): return t.strftime('%H:%M')
 
-def analyze_vehicle_day(vehicle, pts, rules, learned_days):
+def analyze_vehicle_day(vehicle, pts, rules, learned_days, learned_hours=None):
     """learned_days: {date: [cells]} من الأيام السابقة فقط (بدون اليوم الحالي)."""
     mv, rl = rules['movement'], rules['route_learning']
     res = dict(plate=vehicle['plate'], project=vehicle.get('project'), driver=vehicle.get('driver'), points=len(pts),
                km=0.0, moving_minutes=0, first_move=None, last_move=None, zone=[], hours=[], route=[], learning_days=len(learned_days), route_status='learning')
-    if len(pts) < 2: return res, []
+    hours_today = ['0'] * 24
+    if len(pts) < 2: return res, [], ''.join(hours_today)
     moving = moving_flags(pts, mv['min_speed_kmh'])
     for i in range(1, len(pts)):
         d = haversine_km(pts[i - 1][1:3], pts[i][1:3])
         if d < 50: res['km'] += d
         if moving[i]:
             res['moving_minutes'] += max(0, min(10, (pts[i][0] - pts[i - 1][0]).total_seconds() / 60))
+    for p, m in zip(pts, moving):
+        if m: hours_today[p[0].hour] = '1'
     mt = [p[0] for p, m in zip(pts, moving) if m]
     if mt: res['first_move'], res['last_move'] = fmt_t(mt[0]), fmt_t(mt[-1])
     def ep_dict(e, extra=None):
@@ -246,8 +306,9 @@ def analyze_vehicle_day(vehicle, pts, rules, learned_days):
             res['zone'].append(ep_dict(e, {'city': city, 'max_km_outside': round(far, 1)}))
     res['city'] = None if city == '__none__' else city
     # 2) hours
-    shift = shift_for(vehicle, rules); res['shift'] = f"من {shift['start']} إلى {shift['end']}"
-    if not ov.get('skip_hours_check'):
+    shift, src = shift_for(vehicle, rules, observed_hours_from(learned_hours or {}, rules))
+    res['shift'] = shift_label(shift, src); res['shift_source'] = src
+    if shift is not None and not shift.get('skip_hours_check') and not ov.get('skip_hours_check'):
         for e in episodes(pts, [m and not in_shift(p[0], shift) for p, m in zip(pts, moving)], mv['merge_gap_minutes']):
             if e['km'] >= mv['min_episode_km']: res['hours'].append(ep_dict(e))
     # 3) learned route
@@ -268,7 +329,7 @@ def analyze_vehicle_day(vehicle, pts, rules, learned_days):
             if d['minutes'] >= rl['min_deviation_minutes'] and d['km'] >= rl['min_deviation_km']: res['route'].append(d)
     learn = sorted({c for c, p in zip(cells_today, pts) if (not rl.get('learn_from_in_shift_only') or in_shift(p[0], shift))})
     res['km'] = round(res['km'], 1); res['moving_minutes'] = round(res['moving_minutes'])
-    return res, learn
+    return res, learn, ''.join(hours_today)
 
 # ---------------------------------------------------------------- run
 def match_assets(assets, fleet):
@@ -279,7 +340,7 @@ def match_assets(assets, fleet):
         for p in v['previous']: by_plate.setdefault(plate_key(p), v)
     out, unmatched = [], []
     for a in assets:
-        v = by_imei.get(str(a.get('imei') or '').strip()) or by_plate.get(plate_key(a.get('licensePlate') or a.get('name') or ''))
+        v = by_imei.get(str(a.get('imei') or '').strip()) or by_plate.get(plate_key(a.get('licensePlate'))) or by_plate.get(plate_key(a.get('name')))
         (out if v else unmatched).append((a, v))
     return out, [a for a, _ in unmatched]
 
@@ -298,9 +359,12 @@ def run(day, api, store, fleet, rules, workers=8, log=print):
         pts = parse_points(raw)
         hist = store.get(f'cells/{vid}') or {}
         learned = {d: (c.split(',') if isinstance(c, str) else c) for d, c in hist.items() if start <= d < day and c}
-        res, learn = analyze_vehicle_day(v, pts, rules, learned)
+        hh = store.get(f'hours/{vid}') or {}
+        learned_h = {d: h for d, h in hh.items() if start <= d < day}
+        res, learn, hours_bits = analyze_vehicle_day(v, pts, rules, learned, learned_h)
         res['vehicleID'] = vid
         if learn: store.put(f'cells/{vid}/{day}', ','.join(learn))
+        if '1' in hours_bits: store.put(f'hours/{vid}/{day}', hours_bits)
         return res
     results = []
     with cf.ThreadPoolExecutor(max_workers=workers) as ex:

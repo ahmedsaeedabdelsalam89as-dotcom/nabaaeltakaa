@@ -1,0 +1,4 @@
+{
+  "_comment": "وردية كل مركبة من خطط التشغيل. type من shift_types أو start/end مخصص. off_days اختياري. يُملأ من نموذج الورديات.",
+  "vehicles": {}
+}

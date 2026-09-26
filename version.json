@@ -1,5 +1,5 @@
 {
-  "version": "1.60.0",
+  "version": "1.60.1",
   "released_at": "2026-09-27",
-  "notes": "24/7 tracking monitor: scheduled GitHub Actions engine detecting out-of-zone, out-of-hours and learned-route deviations per vehicle, reports stored in private Firebase; new in-app daily monitoring page. Version jumps to 1.60.0 to avoid clashing with unpublished local 1.58/1.59 builds."
+  "notes": "Tracking fix: robust plate matching (letters+digits, any order, driver names in parentheses, Latin plates, IMEI and previous plates) so all tracked vehicles link instead of 12; per-vehicle working shifts from operation plans (day/evening/night/24h/emergency) with learned observed hours when no plan shift exists."
 }

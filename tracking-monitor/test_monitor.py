@@ -5,6 +5,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import monitor as M
 
 RULES = M.load_rules()
+RULES_PLAN = dict(RULES, vehicle_shifts={M.plate_key('أ س ه 5301'): {'type': 'صباحي', 'off_days': ['Friday']}})
 A, B = (20.02, 41.47), (20.10, 41.55)          # مسار يومي معتاد داخل الباحة
 DETOUR = (20.16, 41.36)                           # داخل الباحة لكنه خارج المسار المعتاد
 FAR = (20.60, 41.10)                              # خارج نطاق الباحة (~70 كم من المركز)
@@ -36,6 +37,9 @@ class Unit(unittest.TestCase):
 
     def test_plate_key(self):
         self.assertEqual(M.plate_key('أ س ه 5301'), M.plate_key('ا س ه  5301'))
+        self.assertEqual(M.plate_key('ب ص ص 2029'), M.plate_key('2029 ب ص ص(سهيل تشودري  )'))
+        self.assertEqual(M.plate_key('ب ط ل 9638'), M.plate_key('9638.ب.ط.ل'))
+        self.assertEqual(M.plate_key('أ أ د 9035'), M.plate_key('ا ا د 9035 ( عامر ) بوب كات'))
 
     def test_parse_points_flexible(self):
         raw = [{'latitude': '20.1', 'longitude': '41.5', 'timestamp': '2026-09-20T07:00:00', 'speed': 12},
@@ -45,7 +49,7 @@ class Unit(unittest.TestCase):
 
     def test_normal_day_clean(self):
         d = dt.date(2026, 9, 20)  # Sunday
-        res, learn = M.analyze_vehicle_day(VEH, normal_day(d), RULES, {})
+        res, learn, _ = M.analyze_vehicle_day(VEH, normal_day(d), RULES_PLAN, {})
         self.assertEqual((res['zone'], res['hours'], res['route']), ([], [], []))
         self.assertEqual(res['route_status'], 'learning'); self.assertTrue(learn)
 
@@ -54,12 +58,13 @@ class Unit(unittest.TestCase):
         for i in range(6):
             d = dt.date(2026, 9, 13) + dt.timedelta(days=i)
             if d.weekday() == 4: continue  # الجمعة إجازة
-            _, cells = M.analyze_vehicle_day(VEH, normal_day(d), RULES, dict(learned))
+            _, cells, _ = M.analyze_vehicle_day(VEH, normal_day(d), RULES_PLAN, dict(learned))
             learned[d.isoformat()] = cells
         self.assertGreaterEqual(len(learned), RULES['route_learning']['min_learning_days'])
         d = dt.date(2026, 9, 20)
-        res, _ = M.analyze_vehicle_day(VEH, bad_day(d), RULES, learned)
+        res, _, _ = M.analyze_vehicle_day(VEH, bad_day(d), RULES_PLAN, learned)
         self.assertEqual(res['route_status'], 'active')
+        self.assertEqual(res['shift_source'], 'خطة التشغيل')
         self.assertTrue(any(e['start'] in ('09:00', '09:01', '09:02') for e in res['route']), res['route'])  # الخروج عن المسار بدأ لحظة مغادرة الممر (~09:01)
         self.assertTrue(res['hours'] and res['hours'][0]['start'] == '16:00', res['hours'])    # حركة بعد الدوام من 16:00
         self.assertTrue(res['zone'] and res['zone'][0]['max_km_outside'] > 0, res['zone'])     # خرج من نطاق الباحة
@@ -67,13 +72,37 @@ class Unit(unittest.TestCase):
 
     def test_friday_is_off(self):
         d = dt.date(2026, 9, 18)  # Friday
-        res, _ = M.analyze_vehicle_day(VEH, normal_day(d), RULES, {})
+        res, _, _ = M.analyze_vehicle_day(VEH, normal_day(d), RULES_PLAN, {})
         self.assertTrue(res['hours'])
 
     def test_admin_vehicle_no_zone(self):
         v = dict(VEH, project='العمومية (الإدارة)')
-        res, _ = M.analyze_vehicle_day(v, bad_day(dt.date(2026, 9, 20)), RULES, {})
+        res, _, _ = M.analyze_vehicle_day(v, bad_day(dt.date(2026, 9, 20)), RULES, {})
         self.assertEqual(res['zone'], [])
+
+    def test_no_plan_shift_not_judged_until_learned(self):
+        d = dt.date(2026, 9, 20)
+        res, _, _ = M.analyze_vehicle_day(VEH, bad_day(d), RULES, {}, {})
+        self.assertEqual(res['hours'], []); self.assertEqual(res['shift_source'], 'غير محددة')
+        hours = {}
+        for i in range(6):
+            dd = dt.date(2026, 9, 13) + dt.timedelta(days=i)
+            _, _, bits = M.analyze_vehicle_day(VEH, normal_day(dd), RULES, {}, {})
+            hours[dd.isoformat()] = bits
+        res, _, _ = M.analyze_vehicle_day(VEH, bad_day(d), RULES, {}, hours)
+        self.assertEqual(res['shift_source'], 'مرصودة من الحركة')
+        self.assertTrue(res['hours'] and res['hours'][0]['start'] >= '16:00', res['hours'])
+
+    def test_24h_and_emergency_skip_hours(self):
+        for t in ('طوال اليوم', 'طوارئ'):
+            r = dict(RULES, vehicle_shifts={M.plate_key(VEH['plate']): {'type': t}})
+            res, _, _ = M.analyze_vehicle_day(VEH, bad_day(dt.date(2026, 9, 20)), r, {})
+            self.assertEqual(res['hours'], [], t)
+
+    def test_night_shift(self):
+        r = dict(RULES, vehicle_shifts={M.plate_key(VEH['plate']): {'type': 'ليلي', 'off_days': []}})
+        res, _, _ = M.analyze_vehicle_day(VEH, normal_day(dt.date(2026, 9, 20)), r, {})
+        self.assertTrue(res['hours'])  # حركة الصباح خارج وردية ليلية 22:00–06:00
 
 # ---------------------------------------------------------------- end-to-end with mock servers
 class Mock(http.server.BaseHTTPRequestHandler):
@@ -121,10 +150,12 @@ class EndToEnd(unittest.TestCase):
         index = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'src', 'index.html')
         env = dict(os.environ, SAC_TOKEN='T', FIREBASE_EMAIL='e@x', FIREBASE_PASSWORD='p', FIREBASE_DB=base, FIREBASE_AUTH_BASE=base, SAC_API_BASE=base + '/UCIC/api')
         old = dict(os.environ); os.environ.update(env)
+        orig = M.load_rules
+        M.load_rules = lambda *a, **k: dict(orig(*a, **k), vehicle_shifts=RULES_PLAN['vehicle_shifts'])
         try:
             for d in days: M.main(['--date', d.isoformat(), '--index', index])
         finally:
-            os.environ.clear(); os.environ.update(old); srv.shutdown(); srv.server_close()
+            M.load_rules = orig; os.environ.clear(); os.environ.update(old); srv.shutdown(); srv.server_close()
         rep = Mock.db[f'reports/{days[-1].isoformat()}']
         self.assertEqual(rep['summary']['matched'], 1); self.assertEqual(rep['unmatched'], ['XYZ 1'])
         v = rep['vehicles'][0]
@@ -133,6 +164,7 @@ class EndToEnd(unittest.TestCase):
         self.assertEqual(Mock.db['latest']['date'], days[-1].isoformat())
         self.assertIn('timestamp', rep['api_point_fields'])
         self.assertTrue(any(k.startswith('cells/101/') for k in Mock.db))
+        self.assertTrue(any(k.startswith('hours/101/') for k in Mock.db))
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)
