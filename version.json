@@ -1,5 +1,5 @@
 {
-  "version": "1.51.1",
+  "version": "1.52.0",
   "released_at": "2026-09-26",
-  "notes": "Handover of water truck أ ب ص 1848 to driver مظهر اقبال ظفر اقبال (2026-09-26) with his heavy-transport license; previous driver مد فرهد علي unassigned. Idempotent once-per-device migration."
+  "notes": "Reconciled the 2026-09-26 Tam platform export (40 vehicles) by chassis number: registration type (30), inspection status (8), plate change 3923 -> أ س ه 5278, actual user. Vehicles absent from the export left untouched. Idempotent once-per-device migration."
 }
