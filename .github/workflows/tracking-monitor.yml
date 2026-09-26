@@ -1,0 +1,62 @@
+name: tracking-monitor
+
+# مراقبة التتبع لأسطول نبع الطاقة: كل ساعة يُحدَّث تقرير اليوم الجاري،
+# وكل صباح 06:10 بتوقيت الرياض يُغلق تقرير الأمس نهائيًا.
+# الأسرار المطلوبة (Settings → Secrets and variables → Actions):
+#   SAC_TOKEN          توكن واجهة Saudi Tracking Solutions (x-token)
+#   FIREBASE_EMAIL     بريد حساب المزامنة في Firebase
+#   FIREBASE_PASSWORD  كلمة مرور حساب المزامنة
+# لا تُكتب أي إحداثيات أو لوحات في سجلات GitHub — التقارير تُحفَظ في Firebase فقط.
+on:
+  schedule:
+    - cron: '7 * * * *'      # كل ساعة (اليوم الجاري)
+    - cron: '10 3 * * *'     # 06:10 الرياض (إغلاق تقرير الأمس)
+  workflow_dispatch:
+    inputs:
+      date:
+        description: 'تاريخ محدد YYYY-MM-DD (اختياري)'
+        required: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: tracking-monitor
+  cancel-in-progress: false
+
+jobs:
+  monitor:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Self-test
+        run: python tracking-monitor/test_monitor.py
+      - name: Check secrets
+        env:
+          SAC_TOKEN: ${{ secrets.SAC_TOKEN }}
+          FIREBASE_EMAIL: ${{ secrets.FIREBASE_EMAIL }}
+          FIREBASE_PASSWORD: ${{ secrets.FIREBASE_PASSWORD }}
+        run: |
+          missing=""
+          [ -z "$SAC_TOKEN" ] && missing="$missing SAC_TOKEN"
+          [ -z "$FIREBASE_EMAIL" ] && missing="$missing FIREBASE_EMAIL"
+          [ -z "$FIREBASE_PASSWORD" ] && missing="$missing FIREBASE_PASSWORD"
+          if [ -n "$missing" ]; then echo "::warning::أسرار ناقصة:$missing — المراقبة متوقفة حتى تُضاف."; echo "SKIP=1" >> "$GITHUB_ENV"; fi
+      - name: Run monitor
+        if: env.SKIP != '1'
+        env:
+          SAC_TOKEN: ${{ secrets.SAC_TOKEN }}
+          FIREBASE_EMAIL: ${{ secrets.FIREBASE_EMAIL }}
+          FIREBASE_PASSWORD: ${{ secrets.FIREBASE_PASSWORD }}
+        run: |
+          if [ -n "${{ github.event.inputs.date }}" ]; then
+            python tracking-monitor/monitor.py --date "${{ github.event.inputs.date }}"
+          elif [ "${{ github.event.schedule }}" = "10 3 * * *" ]; then
+            python tracking-monitor/monitor.py --yesterday
+          else
+            python tracking-monitor/monitor.py --today
+          fi
