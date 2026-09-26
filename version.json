@@ -1,5 +1,5 @@
 {
-  "version": "1.56.0",
+  "version": "1.56.1",
   "released_at": "2026-09-26",
-  "notes": "Imported Al-Dries fuel report 2026-07-21..2026-09-26 (88 rows, 123,262.12 L, 225,057.38 SAR incl. VAT; totals reconcile), all plates matched incl. 7 via old plates; new Tam authorization for مظهر on 1848. Idempotent once-per-device migration."
+  "notes": "Prevent double counting: the cumulative Dries report 21/07-26/09 overlapped two previously imported weeks; rows converted to net 03/08-26/09 with originals preserved; 5 contradictory rows zeroed and flagged. Idempotent once-per-device migration."
 }
