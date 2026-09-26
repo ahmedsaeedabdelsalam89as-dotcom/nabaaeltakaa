@@ -51,6 +51,26 @@ function extractFunction(name) {
   throw new Error('unclosed function ' + name);
 }
 
+function extractArrayLiteral(name) {
+  const needle = 'var ' + name + ' = [';
+  const start = html.indexOf(needle);
+  assert(start >= 0, 'missing array literal ' + name + ' in src/index.html');
+  const openBracket = start + needle.length - 1;
+  let depth = 0, quote = null, esc = false, line = false, block = false;
+  for (let i = openBracket; i < html.length; i++) {
+    const c = html[i], n = html[i + 1];
+    if (line) { if (c === '\n') line = false; continue; }
+    if (block) { if (c === '*' && n === '/') { block = false; i++; } continue; }
+    if (quote) { if (esc) { esc = false; continue; } if (c === '\\') { esc = true; continue; } if (c === quote) quote = null; continue; }
+    if (c === '/' && n === '/') { line = true; i++; continue; }
+    if (c === '/' && n === '*') { block = true; i++; continue; }
+    if (c === '"' || c === "'" || c === '`') { quote = c; continue; }
+    if (c === '[') depth++;
+    else if (c === ']' && --depth === 0) return html.slice(start, i + 1) + ';';
+  }
+  throw new Error('unclosed array literal ' + name);
+}
+
 function makeSandbox(extraFleet, extraUnregistered) {
   const ctx = {
     console,
@@ -278,4 +298,43 @@ function makeSandbox(extraFleet, extraUnregistered) {
   console.log('ENGINE_CORRECTNESS_PLATE_ALIAS_DOCS_OK', { resolvedAliases: 2, docsShown: 3, unrelatedLeaked: false });
 }
 
-console.log('ENGINE_CORRECTNESS_SUITE_OK', { enginesCovered: 4, note: 'قابل للتوسعة لبقية الـ38 محرك بنفس النمط — الدفعة القادمة: computeMaintenanceTracking, computeCostIntelligence, computeDriverPerformance' });
+// =============================================================================
+// 5) buildVehicleDocTypeGridHtml + findLatestDocForField — نفس إصلاح اللوحات القديمة (v1.50.1)
+//    لكن على "حزمة مستندات المركبة" (الخانات السبع الظاهرة أسفل داشبورد المركبة) وعلى الربط التفاعلي
+//    بين حقل فى شبكة بيانات المركبة (مثلًا "التأمين") وآخر مستند من نوعه — كلاهما كان يقارن باللوحة
+//    الحالية فقط قبل هذا الإصلاح، فيفقد أي مستند محفوظ برقم لوحة قديمة اندمجت (v1.50.0).
+// =============================================================================
+{
+  const PLATE_NEW = 'ن ب أ 2001';
+  const PLATE_OLD = 'ن ب أ 2002';
+  const ctx = makeSandbox([{ plate: PLATE_NEW, previous_plate_numbers: [PLATE_OLD] }], []);
+  ctx.escapeHtml = (s) => String(s || '');
+  ctx.htmlJsArg = (v) => JSON.stringify(String(v || ''));
+  ctx.fmtTime = () => '';
+  ctx.nabaImageAttribute = (s) => s;
+  ctx.APP.DOCUMENTS_LIBRARY = [
+    { id: 'e1', plate: PLATE_NEW, doc_type: 'estmara', name: 'استمارة حالية', added_at: '2026-01-01' },
+    { id: 'e2', plate: PLATE_OLD, doc_type: 'insurance', name: 'تأمين قبل التوحيد', added_at: '2025-06-01' }
+  ];
+
+  vm.runInContext(extractFunction('normPlate'), ctx);
+  vm.runInContext(extractArrayLiteral('VEHICLE_DOC_TYPES'), ctx);
+  vm.runInContext(extractArrayLiteral('FIELD_TO_DOC_TYPE'), ctx);
+  vm.runInContext(extractFunction('buildVehicleDocTypeGridHtml'), ctx);
+  vm.runInContext(extractFunction('findLatestDocForField'), ctx);
+
+  const vNew = { plate: PLATE_NEW, previous_plate_numbers: [PLATE_OLD] };
+  const gridHtml = vm.runInContext('buildVehicleDocTypeGridHtml(' + JSON.stringify(vNew) + ')', ctx);
+  const estmaraSlotFilled = /استمارة المركبة[\s\S]{0,400}?vd-doctype-view/.test(gridHtml);
+  assert(estmaraSlotFilled, 'estmara slot (current plate) must show the uploaded document');
+  // العدّ الحقيقي: خانتين مليانتين (استمارة من اللوحة الحالية + تأمين من اللوحة القديمة) بدل "لا يوجد بعد"
+  const filledSlots = (gridHtml.match(/vd-doctype-view/g) || []).length;
+  assert(filledSlots === 2, 'expected exactly 2 filled doc-type slots (current-plate estmara + old-plate insurance), got ' + filledSlots);
+
+  const linked = vm.runInContext('findLatestDocForField(' + JSON.stringify(PLATE_NEW) + ',' + JSON.stringify('حالة التأمين') + ',' + JSON.stringify([PLATE_OLD]) + ')', ctx);
+  assert(linked && linked.id === 'e2', 'findLatestDocForField must resolve the insurance document saved under the old, now-merged plate');
+
+  console.log('ENGINE_CORRECTNESS_DOC_TYPE_GRID_PLATE_ALIAS_OK', { filledSlots, linkedFieldDocId: linked && linked.id });
+}
+
+console.log('ENGINE_CORRECTNESS_SUITE_OK', { enginesCovered: 5, note: 'قابل للتوسعة لبقية الـ38 محرك بنفس النمط — الدفعة القادمة: computeMaintenanceTracking, computeCostIntelligence, computeDriverPerformance' });
