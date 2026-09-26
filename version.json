@@ -1,5 +1,5 @@
 {
-  "version": "1.56.2",
+  "version": "1.57.0",
   "released_at": "2026-09-26",
-  "notes": "Tam authorization for مد فرهد علي (2582684664) on أ ص أ 5657 (2026-09-26..2027-09-15); assigned as its driver; old 1848 authorization flagged for cancellation. Idempotent once-per-device migration."
+  "notes": "Imported Dries quarterly reports: Q2 2026 (181,034.88 L / 329,710.04 SAR) in full, Q3 2026 to 26/09 as net 01/07-12/07 on top of existing rows (quarter totals kept per row). Continuous fuel history 01/04-26/09. Idempotent once-per-device migration."
 }
