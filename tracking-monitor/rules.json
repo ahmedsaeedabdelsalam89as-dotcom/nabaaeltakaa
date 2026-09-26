@@ -96,6 +96,10 @@
     },
     "طوارئ": {
       "skip_hours_check": true
+    },
+    "متوقفة": {
+      "windows": [],
+      "grace_minutes": 0
     }
   },
   "use_default_shift_when_unknown": false,

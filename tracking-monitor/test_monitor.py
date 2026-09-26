@@ -5,6 +5,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import monitor as M
 
 RULES = M.load_rules()
+RULES_NOPLAN = dict(RULES, vehicle_shifts={}, project_shift={})
 RULES_PLAN = dict(RULES, vehicle_shifts={M.plate_key('أ س ه 5301'): {'type': 'صباحي', 'off_days': ['Friday']}})
 A, B = (20.02, 41.47), (20.10, 41.55)          # مسار يومي معتاد داخل الباحة
 DETOUR = (20.16, 41.36)                           # داخل الباحة لكنه خارج المسار المعتاد
@@ -82,14 +83,14 @@ class Unit(unittest.TestCase):
 
     def test_no_plan_shift_not_judged_until_learned(self):
         d = dt.date(2026, 9, 20)
-        res, _, _ = M.analyze_vehicle_day(VEH, bad_day(d), RULES, {}, {})
+        res, _, _ = M.analyze_vehicle_day(VEH, bad_day(d), RULES_NOPLAN, {}, {})
         self.assertEqual(res['hours'], []); self.assertEqual(res['shift_source'], 'غير محددة')
         hours = {}
         for i in range(6):
             dd = dt.date(2026, 9, 13) + dt.timedelta(days=i)
-            _, _, bits = M.analyze_vehicle_day(VEH, normal_day(dd), RULES, {}, {})
+            _, _, bits = M.analyze_vehicle_day(VEH, normal_day(dd), RULES_NOPLAN, {}, {})
             hours[dd.isoformat()] = bits
-        res, _, _ = M.analyze_vehicle_day(VEH, bad_day(d), RULES, {}, hours)
+        res, _, _ = M.analyze_vehicle_day(VEH, bad_day(d), RULES_NOPLAN, {}, hours)
         self.assertEqual(res['shift_source'], 'مرصودة من الحركة')
         self.assertTrue(res['hours'] and res['hours'][0]['start'] >= '16:00', res['hours'])
 
@@ -108,6 +109,32 @@ class Unit(unittest.TestCase):
         self.assertEqual((s['start'], src), ('05:30', 'وردية المشروع'))
         s, src = M.shift_for(VEH, r)
         self.assertTrue(s['skip_hours_check']); self.assertEqual(src, 'خطة التشغيل')
+
+    def test_windows_fullday_stopped(self):
+        T = lambda h, d=20: dt.datetime(2026, 9, d, h, 0)   # 20/09 أحد، 18/09 جمعة
+        two = {'windows': [['06:00', '14:00'], ['16:00', '24:00']], 'grace_minutes': 0}
+        self.assertTrue(M.in_shift(T(7), two)); self.assertFalse(M.in_shift(T(15), two)); self.assertTrue(M.in_shift(T(23), two))
+        night = {'windows': [['18:00', '02:00']], 'full_days': ['Friday'], 'grace_minutes': 0}
+        self.assertFalse(M.in_shift(T(10), night)); self.assertTrue(M.in_shift(T(10, 18), night)); self.assertTrue(M.in_shift(T(1), night))
+        self.assertFalse(M.in_shift(T(10), {'windows': [], 'grace_minutes': 0}))
+
+    def test_ambiguous_plan_resolved_by_movement(self):
+        c = {'candidates': [{'start': '06:00', 'end': '19:00'}, {'start': '18:00', 'end': '07:00'}], 'off_days': []}
+        r = dict(RULES, vehicle_shifts={M.plate_key(VEH['plate']): c})
+        s, src = M.shift_for(VEH, r, None)
+        self.assertIsNone(s); self.assertIn('غامضة', src)
+        s, src = M.shift_for(VEH, r, list(range(7, 18)))
+        self.assertEqual((s['start'], s['end']), ('06:00', '19:00')); self.assertIn('فُسّرت', src)
+        s, _ = M.shift_for(VEH, r, [19, 20, 21, 22, 23, 0, 1, 2, 3, 4, 5])
+        self.assertEqual(s['start'], '18:00')
+
+    def test_real_plans_file_loads(self):
+        r = M.load_rules()
+        self.assertGreaterEqual(len(r['vehicle_shifts']), 60)
+        s, src = M.shift_for(dict(plate='أ ب ص 1845', project='مخططات شرق جدة'), r)
+        self.assertEqual((s['start'], s['end'], src), ('20:00', '06:00', 'خطة التشغيل'))
+        s, src = M.shift_for(dict(plate='ب ص ر 1111', project='الورشة (ورشة العقيق بالباحة)'), r)
+        self.assertEqual((s['windows'], src), ([], 'وردية المشروع'))
 
     def test_night_shift(self):
         r = dict(RULES, vehicle_shifts={M.plate_key(VEH['plate']): {'type': 'ليلي', 'off_days': []}})

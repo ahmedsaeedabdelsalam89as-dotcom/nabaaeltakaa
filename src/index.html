@@ -2981,7 +2981,7 @@ return ctor.prototype=parent.prototype,child.prototype=new ctor,child.__super__=
     'أ س م 1065': 'أ س ه 5315',
     'ا س م 1065': 'أ س ه 5315',
     'ب ص ر 8154': 'أ س ه 5277',
-    'ب ط ق 3923': 'أ س ه 5287',
+    'ب ط ق 3923': 'أ س ه 5278',
     'ب ط ع 6435': 'أ ب ص 1846',
     'ب ط ع 6434': 'أ س ه 5301',
     'ب س ح 1655': 'أ س ه 5896',
@@ -4048,7 +4048,7 @@ return ctor.prototype=parent.prototype,child.prototype=new ctor,child.__super__=
     h += '<div class="card"><b>كل المركبات</b><div class="table-wrap"><table><thead><tr><th>اللوحة</th><th>المشروع</th><th>النطاق</th><th>الدوام</th><th>كم</th><th>دقائق حركة</th><th>أول حركة</th><th>آخر حركة</th><th>المسار</th><th>أحداث</th></tr></thead><tbody>';
     rep.vehicles.forEach(function (v) {
       var n = (v.zone || []).length + (v.hours || []).length + (v.route || []).length;
-      h += '<tr><td>' + escapeHtml(v.plate) + '</td><td>' + escapeHtml(v.project || '—') + '</td><td>' + escapeHtml(v.city || '—') + '</td><td>' + escapeHtml(v.shift || '—') + '</td><td>' + escapeHtml(String(v.km)) + '</td><td>' + escapeHtml(String(v.moving_minutes)) + '</td><td>' + escapeHtml(v.first_move || '—') + '</td><td>' + escapeHtml(v.last_move || '—') + '</td><td>' + (v.route_status === 'active' ? '✅ متعلَّم' : '⏳ تعلّم (' + escapeHtml(String(v.learning_days || 0)) + '/5 أيام)') + '</td><td>' + (n ? '⚠️ ' + n : '—') + '</td></tr>';
+      h += '<tr><td>' + escapeHtml(v.plate) + '</td><td>' + escapeHtml(v.project || '—') + '</td><td>' + escapeHtml(v.city || '—') + '</td><td>' + escapeHtml(v.shift || '—') + (v.plan_note ? '<div class="muted" data-naba-style="font-size:11px;">' + escapeHtml(v.plan_note) + '</div>' : '') + '</td><td>' + escapeHtml(String(v.km)) + '</td><td>' + escapeHtml(String(v.moving_minutes)) + '</td><td>' + escapeHtml(v.first_move || '—') + '</td><td>' + escapeHtml(v.last_move || '—') + '</td><td>' + (v.route_status === 'active' ? '✅ متعلَّم' : '⏳ تعلّم (' + escapeHtml(String(v.learning_days || 0)) + '/5 أيام)') + '</td><td>' + (n ? '⚠️ ' + n : '—') + '</td></tr>';
     });
     h += '</tbody></table></div>';
     if (rep.unmatched && rep.unmatched.length) h += '<div class="small-note">أجهزة في منصة التتبع غير مربوطة بمركبة في النظام: ' + escapeHtml(rep.unmatched.join('، ')) + '</div>';
@@ -21691,7 +21691,8 @@ function computeMaintenanceOptimization(){var f=computePredictiveFailureEngine()
     {date:'2026-09-27',version:'1.60.1',title:'🔗 ربط كل مركبات التتبع + وردية لكل مركبة من خطط التشغيل',items:[
       'سبب ظهور 12 مركبة فقط: مفتاح مطابقة اللوحة كان يحذف المسافات فقط، وأسماء الأجهزة بصيغ مثل "2029 ب ص ص(سهيل)" و"9638.ب.ط.ل". المفتاح الجديد يقرأ الحروف والأرقام بأي ترتيب ويتجاهل الأسماء بين الأقواس ويحوّل اللوحات اللاتينية — المطابقة على تقارير المنصة 61/61 (ر2) و66/67 (ر3).',
       'المطابقة الآن على اللوحة ثم اسم الجهاز ثم رقم IMEI ثم اللوحات السابقة.',
-      'محرك المراقبة: الدوام لكل مركبة على حدة — تجاوز يدوي ← خطة التشغيل (vehicle_shifts.json: صباحي/نهاري/مسائي/ليلي/طوال اليوم/طوارئ) ← وردية المشروع ← الوردية المرصودة من حركة المركبة بعد 5 أيام. مركبة بلا وردية لا يُحكم على دوامها، وطوال اليوم/الطوارئ لا تُحاسب على الساعات.'
+      'محرك المراقبة: الدوام لكل مركبة على حدة — تجاوز يدوي ← خطة التشغيل (vehicle_shifts.json: صباحي/نهاري/مسائي/ليلي/طوال اليوم/طوارئ) ← وردية المشروع ← الوردية المرصودة من حركة المركبة بعد 5 أيام. مركبة بلا وردية لا يُحكم على دوامها، وطوال اليوم/الطوارئ لا تُحاسب على الساعات.',
+      'ورديات 66 مركبة من خطط التشغيل الأسبوعية السبع (فترتان، ليلي، طوارئ، الجمعة كاملة). الخطط المكتوبة بلا ص/م (جنوب جدة البلد وشرق جدة) يختار المحرك تفسيرها من حركة المركبة الفعلية. مركبات الورشة: أي حركة تُسجّل. تصحيح لوحة 3923 القديمة إلى أ س ه 5278.'
     ]},
     {date:'2026-09-27',version:'1.60.0',title:'🛰️ مراقبة التتبع 24 ساعة: النطاق، الدوام، والمسار المتعلَّم',items:[
       'بطلب أحمد: محرك مراقبة تلقائي (tracking-monitor/monitor.py) يعمل على GitHub Actions كل ساعة، ويغلق تقرير الأمس كل صباح 06:10 بتوقيت الرياض — بلا جهاز يعمل ولا تدخل بشري بعد إضافة الأسرار مرة واحدة.',

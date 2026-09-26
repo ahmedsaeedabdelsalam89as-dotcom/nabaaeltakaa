@@ -20,6 +20,7 @@ DEFAULT_API = 'https://app.sactracking.com/UCIC/api'
 DEFAULT_FB_DB = 'https://nabee-eltakaa-default-rtdb.firebaseio.com'
 DEFAULT_FB_KEY = 'AIzaSyB2Ci6dwTX_P2mgnKhn-Ll6C7ZHXuwzw7o'  # مفتاح عام موجود أصلًا في التطبيق (ليس سرًا)
 DAYS_EN = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+DAYS_AR = {'Saturday': 'السبت', 'Sunday': 'الأحد', 'Monday': 'الاثنين', 'Tuesday': 'الثلاثاء', 'Wednesday': 'الأربعاء', 'Thursday': 'الخميس', 'Friday': 'الجمعة'}
 
 # ---------------------------------------------------------------- helpers
 def norm(s):
@@ -205,12 +206,34 @@ def _expand_shift(spec, rules):
     base.update({k: v for k, v in spec.items() if k != 'type'})
     return base
 
+def _hours_of(win):
+    a, b = hm(win[0]) // 60, (hm(win[1]) + 59) // 60
+    return {h % 24 for h in (range(a, b) if a < b else range(a, b + 24))}
+
+def _shift_hours(sh):
+    return set().union(*[_hours_of(w) for w in sh.get('windows') or [(sh['start'], sh['end'])]])
+
+def _resolve_candidates(shift, observed_hours):
+    """خطة بلا ص/م (مثل «6 الي 7»): نختار التفسير الأقرب لساعات الحركة الفعلية (تشابه جاكار)، ولا نحكم قبل التعلم."""
+    if observed_hours is None: return None
+    obs = set(observed_hours)
+    def score(c):
+        h = _shift_hours(c); return len(h & obs) / max(1, len(h | obs))
+    best = max(shift['candidates'], key=score)
+    out = {k: v for k, v in shift.items() if k != 'candidates'}; out.update(best)
+    out['resolved_from'] = len(shift['candidates']); return out
+
 def shift_for(vehicle, rules, observed_hours=None):
     """يعيد (الوردية، مصدرها). الترتيب: تجاوز يدوي ← خطة التشغيل (vehicle_shifts.json) ← وردية المشروع ← المرصودة ← لا شيء."""
     ov = (rules.get('vehicle_overrides', {}).get(vehicle['plate'], {}) or {})
     if ov.get('shift'): return _expand_shift(ov['shift'], rules), 'تجاوز يدوي'
     vs = rules.get('vehicle_shifts', {}).get(plate_key(vehicle['plate']))
-    if vs: return _expand_shift(vs, rules), 'خطة التشغيل'
+    if vs:
+        sh = _expand_shift(vs, rules)
+        if sh.get('candidates') and not sh.get('skip_hours_check'):
+            r = _resolve_candidates(sh, observed_hours)
+            return (r, 'خطة التشغيل (فُسّرت بالحركة)') if r else (None, 'خطة التشغيل غامضة — قيد التعلم')
+        return sh, 'خطة التشغيل'
     ps = rules.get('project_shift', {}).get(vehicle.get('project') or '')
     if ps: return _expand_shift(ps, rules), 'وردية المشروع'
     if observed_hours is not None:
@@ -234,22 +257,30 @@ def observed_hours_from(learned_hours, rules):
     return [(best[0] + i) % 24 for i in range(best[1])]
 
 def shift_label(shift, source):
-    if not shift: return 'غير محددة (قيد التعلم)'
+    if not shift: return f'غير محددة ({source})' if source not in ('غير محددة',) else 'غير محددة (قيد التعلم)'
     if shift.get('skip_hours_check'): return f"{shift.get('type', 'بدون قيد وقت')} — {source}"
     if 'observed_hours' in shift:
         h = shift['observed_hours']; return f"مرصودة من الحركة: من {h[0]:02d}:00 إلى {(h[-1] + 1) % 24:02d}:00" if h else 'مرصودة'
-    return f"من {shift['start']} إلى {shift['end']} — {source}"
+    if 'windows' in shift and not shift['windows']: return f"متوقفة — أي حركة تُسجّل — {source}"
+    wins = shift.get('windows') or [(shift['start'], shift['end'])]
+    txt = ' و'.join(f'{a}–{b}' for a, b in wins)
+    if shift.get('full_days'): txt += ' + ' + '،'.join(DAYS_AR.get(d, d) for d in shift['full_days']) + ' كامل'
+    return f"{txt} — {source}"
 
 def in_shift(t, shift):
     if shift is None or shift.get('skip_hours_check'): return True
-    if DAYS_EN[t.weekday()] in shift.get('off_days', []): return False
+    day = DAYS_EN[t.weekday()]
+    if day in shift.get('full_days', []): return True
+    if day in shift.get('off_days', []): return False
     m, g = t.hour * 60 + t.minute, int(shift.get('grace_minutes', 0))
     if 'observed_hours' in shift:
         hrs = set(shift['observed_hours'])
         return any(((m + d) // 60) % 24 in hrs for d in (-g, 0, g))
-    a, b = hm(shift['start']) - g, hm(shift['end']) + g
-    a, b = a % 1440, b % 1440
-    return a <= m <= b if a <= b else (m >= a or m <= b)
+    if 'windows' in shift and not shift['windows']: return False   # مركبة متوقفة/بالورشة: أي حركة تُسجّل
+    for st, en in shift.get('windows') or [(shift['start'], shift['end'])]:
+        a, b = (hm(st) - g) % 1440, (hm(en) + g) % 1440
+        if (a <= m <= b) if a <= b else (m >= a or m <= b): return True
+    return False
 
 def episodes(pts, flags, gap_min):
     """يجمع النقاط المتتالية المعلَّمة في نوبات (بداية/نهاية/مسافة)."""
@@ -311,6 +342,8 @@ def analyze_vehicle_day(vehicle, pts, rules, learned_days, learned_hours=None):
     # 2) hours
     shift, src = shift_for(vehicle, rules, observed_hours_from(learned_hours or {}, rules))
     res['shift'] = shift_label(shift, src); res['shift_source'] = src
+    note = (rules.get('vehicle_shifts', {}).get(plate_key(vehicle['plate'])) or {}).get('note')
+    if note: res['plan_note'] = note
     if shift is not None and not shift.get('skip_hours_check') and not ov.get('skip_hours_check'):
         for e in episodes(pts, [m and not in_shift(p[0], shift) for p, m in zip(pts, moving)], mv['merge_gap_minutes']):
             if e['km'] >= mv['min_episode_km']: res['hours'].append(ep_dict(e))
