@@ -99,6 +99,16 @@ class Unit(unittest.TestCase):
             res, _, _ = M.analyze_vehicle_day(VEH, bad_day(dt.date(2026, 9, 20)), r, {})
             self.assertEqual(res['hours'], [], t)
 
+    def test_project_shift_from_plans_file(self):
+        with tempfile.NamedTemporaryFile('w', suffix='.json', delete=False, encoding='utf-8') as f:
+            json.dump({'projects': {'الشلالات والنوافير': {'start': '05:30', 'end': '13:30'}},
+                       'vehicles': {'ا س ه 5301': {'type': 'طوارئ'}}}, f, ensure_ascii=False)
+        r = M.load_rules(shifts_path=f.name); os.unlink(f.name)
+        s, src = M.shift_for(dict(VEH, plate='ب ب ب 1'), r)
+        self.assertEqual((s['start'], src), ('05:30', 'وردية المشروع'))
+        s, src = M.shift_for(VEH, r)
+        self.assertTrue(s['skip_hours_check']); self.assertEqual(src, 'خطة التشغيل')
+
     def test_night_shift(self):
         r = dict(RULES, vehicle_shifts={M.plate_key(VEH['plate']): {'type': 'ليلي', 'off_days': []}})
         res, _, _ = M.analyze_vehicle_day(VEH, normal_day(dt.date(2026, 9, 20)), r, {})

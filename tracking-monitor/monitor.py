@@ -87,7 +87,10 @@ def load_rules(path=None, shifts_path=None):
     rules['vehicle_shifts'] = {}
     if os.path.isfile(sp):
         with open(sp, encoding='utf-8') as f:
-            rules['vehicle_shifts'] = {plate_key(k): v for k, v in (json.load(f).get('vehicles') or {}).items()}
+            data = json.load(f)
+        rules['vehicle_shifts'] = {plate_key(k): v for k, v in (data.get('vehicles') or {}).items()}
+        # وردية المشروع من ملف الخطط تكمّل (ولا تلغي) ما في rules.json
+        rules['project_shift'] = dict(data.get('projects') or {}, **(rules.get('project_shift') or {}))
     return rules
 
 def load_fleet(index_html):
