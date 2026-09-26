@@ -1,5 +1,5 @@
 {
-  "version": "1.51.0",
+  "version": "1.51.1",
   "released_at": "2026-09-26",
-  "notes": "Adopted the 2026-09-26 HR staff roster as the single source of truth for actual drivers: 49 actual drivers (41 sponsored incl. 2 on leave + 8 rental), 21 non-driver/inactive records moved to DRIVERS_ARCHIVE with reasons, 4 duplicate names merged. Added official TGA operation cards for 7021/7022. Same idempotent engine runs once per device on saved state."
+  "notes": "Handover of water truck أ ب ص 1848 to driver مظهر اقبال ظفر اقبال (2026-09-26) with his heavy-transport license; previous driver مد فرهد علي unassigned. Idempotent once-per-device migration."
 }
