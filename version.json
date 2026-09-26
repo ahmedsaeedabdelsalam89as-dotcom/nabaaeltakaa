@@ -1,5 +1,5 @@
 {
-  "version": "1.52.0",
+  "version": "1.53.0",
   "released_at": "2026-09-26",
-  "notes": "Reconciled the 2026-09-26 Tam platform export (40 vehicles) by chassis number: registration type (30), inspection status (8), plate change 3923 -> أ س ه 5278, actual user. Vehicles absent from the export left untouched. Idempotent once-per-device migration."
+  "notes": "Merged the 2026-09-26 Tam driving-authorizations export (68 authorizations, 22 active) by vehicle serial number: active authorization + history stored per vehicle; drivers completed for 5 vehicles where the recorded driver was empty/non-driver or site roster agreed; 4 conflicts flagged for review. Idempotent once-per-device migration."
 }
