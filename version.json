@@ -1,5 +1,5 @@
 {
-  "version": "1.60.1",
+  "version": "1.61.0",
   "released_at": "2026-09-27",
-  "notes": "Tracking fix: robust plate matching (letters+digits, any order, driver names in parentheses, Latin plates, IMEI and previous plates) so all tracked vehicles link instead of 12; per-vehicle working shifts from operation plans (day/evening/night/24h/emergency) with learned observed hours when no plan shift exists."
+  "notes": "Driver cards from the Logisti platform (Saleh Al-Suwailmi account, 68 cards, 12 active) merged into drivers and fleet by iqama; 27 current drivers on heavy vehicles flagged without an active driver card."
 }
