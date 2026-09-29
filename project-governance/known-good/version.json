@@ -1,5 +1,5 @@
 {
-  "version": "1.50.2",
-  "released_at": "2026-09-26",
-  "notes": "Extended the v1.50.1 plate-alias fix to the rest of the vehicle-document surfaces: the 7-slot document-type grid shown at the very bottom of the vehicle dashboard (estmara/work card/driver card/insurance/inspection/violation/other), the field-level document link on the vehicle info grid (e.g. clicking the insurance field opens its scanned document), the copy-summary text, and the Excel export — all four previously matched documents to a vehicle by strict plate equality and would miss any document saved under an old, now-merged plate number. All four now resolve through the vehicle's current plate and its previous_plate_numbers aliases, so every document tied to a vehicle (by plate history) shows up consistently everywhere in the dashboard. Added a 5th correctness test verifying the document-type grid shows documents from both the current and a merged old plate, and that the field-to-document link resolves an old-plate document correctly."
+  "version": "1.61.6",
+  "released_at": "2026-09-29",
+  "notes": "OCR reliability: a failed Tesseract engine load (typically no internet on first use) used to fail completely silently -- the document still saved but with no auto-detected type/plate/driver and no explanation shown to the user. Now surfaced as an explicit warning toast, and the record carries an ocr_engine_failed flag so this is distinguishable from a genuine no-text image. Also includes 1.61.5 (driver-document linking fix) and 1.61.4 (Firebase auto-sync fix)."
 }
