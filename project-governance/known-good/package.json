@@ -1,7 +1,7 @@
 {
   "name": "fleet-desktop",
   "private": true,
-  "version": "1.50.2",
+  "version": "1.61.6",
   "type": "module",
   "scripts": {
     "tauri": "tauri",
@@ -29,7 +29,8 @@
     "test:independent": "node scripts/independent-assurance-1139.mjs",
     "test:truth": "node scripts/runtime-truth-1140.mjs",
     "test:trial-data": "node scripts/trial-data-integrity-1141.mjs",
-    "test:remote-exec": "node scripts/remote-exec-policy-1142.mjs"
+    "test:remote-exec": "node scripts/remote-exec-policy-1142.mjs",
+    "test:tracking-monitor": "python3 tracking-monitor/test_monitor.py"
   },
   "devDependencies": {
     "@tauri-apps/cli": "^2"
