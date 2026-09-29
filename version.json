@@ -1,5 +1,5 @@
 {
-  "version": "1.61.3",
-  "released_at": "2026-09-27",
-  "notes": "Company registry: Saleh & Abdullah Al-Suwailmi General Contracting added from its VAT registration certificate."
+  "version": "1.61.6",
+  "released_at": "2026-09-29",
+  "notes": "OCR reliability: a failed Tesseract engine load (typically no internet on first use) used to fail completely silently -- the document still saved but with no auto-detected type/plate/driver and no explanation shown to the user. Now surfaced as an explicit warning toast, and the record carries an ocr_engine_failed flag so this is distinguishable from a genuine no-text image. Also includes 1.61.5 (driver-document linking fix) and 1.61.4 (Firebase auto-sync fix)."
 }
