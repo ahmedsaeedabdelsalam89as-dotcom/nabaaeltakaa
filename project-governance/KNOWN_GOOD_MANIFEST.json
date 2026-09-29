@@ -1,11 +1,11 @@
 {
   "schema": 1,
   "project": "Naba Fleet System",
-  "createdAt": "2026-09-26T04:34:30.507Z",
+  "createdAt": "2026-09-29T19:38:51.280Z",
   "files": {
     "src/index.html": {
-      "sha256": "89d08862932eb2bec979b67b7c089bbb54ef1b90d3798dbd34e77df52caa839d",
-      "size": 9575155
+      "sha256": "31d8f3f11991a7adcb914e9a07c31102b8abc46dde96adf6136dbf71fcac8cd7",
+      "size": 10394794
     },
     "PROJECT_RULES.md": {
       "sha256": "bd684a72b5f7e636dc2fd13cddeeca08467de287414478539c25983c58119390",
@@ -16,8 +16,8 @@
       "size": 2606
     },
     "src/modules/naba-workspace.js": {
-      "sha256": "0165a3dd830428ffea5af28b63afbf565405bffc2f01c8780f07d73edb4b0d65",
-      "size": 15055
+      "sha256": "5f436b408e8bc14aa2c4541f5e4f5f26edc61b8b418eb8e48dcf881abd08fa9e",
+      "size": 15079
     },
     "src/styles/naba-workspace.css": {
       "sha256": "23d2c47ebc4404cc9adeb65963bbaef023a4a4942a9ca668252e14edae5a5b41",
@@ -32,15 +32,15 @@
       "size": 188
     },
     "src-tauri/Cargo.toml": {
-      "sha256": "31e17ba79c5b4ed91172a68fd0ae0e348dd9407140643850d6573e6713378eb8",
-      "size": 1775
+      "sha256": "195db68f155c4b9cee0e3fa79a99c45669efea48a99260f978bbe8a3f565c08e",
+      "size": 1774
     },
     "src-tauri/Cargo.lock": {
-      "sha256": "d9fef63eed7efb8453b0d2d67dd6e6b62fa98dd8d4d0ad3bd387d062921ede89",
+      "sha256": "320a747145398352bf36bfa006d62e5417ddce88deef0a6d0efbe07f56ec2197",
       "size": 141142
     },
     "src-tauri/tauri.conf.json": {
-      "sha256": "05c3e516e77a9900f88d583c4f7152c05f79b479bc1f06b39b22315f390bf182",
+      "sha256": "4c8bf41e2ad610cfc19a27f79425bd0ac4ebd15f5b9e83cfa9db03cfd1b7e396",
       "size": 1864
     },
     "src-tauri/tauri.no-updater.conf.json": {
@@ -52,16 +52,16 @@
       "size": 323
     },
     "package.json": {
-      "sha256": "d03fb9cba5299165a460fb8a981011f64e3ae3693822ae27d47453bcdd552245",
-      "size": 2493
+      "sha256": "a35cfc1db2920f9029f4b984dd77bc0c08ba7f7aadb6e8b698f544978f43164e",
+      "size": 2566
     },
     "package-lock.json": {
-      "sha256": "957b4fef1579d37ade1a72f8314eadc298e24b66eacf1103799bae6539a91308",
+      "sha256": "d93b5fdd61274c1455fc6f0b8c5ddf230d813ad6c546a77c4fbd761555ecf231",
       "size": 8114
     },
     "version.json": {
-      "sha256": "160630967670317d35fdae38e90ceee142ba63d99d87e700787aa36b817cc8a3",
-      "size": 1025
+      "sha256": "be3bd1931013111be132c0b6965c24d94e632b0af521d10fd56f713ba2197392",
+      "size": 536
     },
     "BUILD_WINDOWS.ps1": {
       "sha256": "dad396ff55387d88e770645bb76417fbb7f903ea2b2eb3b4ea9cbe24451411ca",
@@ -104,8 +104,8 @@
       "size": 5097
     },
     "scripts/preflight.mjs": {
-      "sha256": "f3477634c88e49301c7428b54b296c5cac036a4a5b54c33513659bd4280f774c",
-      "size": 6146
+      "sha256": "32ed9ab533ee470e5542fd9caae2d5cec7ee130843e54f3892a466bbbfc94a17",
+      "size": 6944
     },
     "scripts/security-smoke.mjs": {
       "sha256": "4babdd110775798b5b9addf39a45af2623be7c9f00a117777b444f3ebd25a528",
@@ -152,7 +152,7 @@
       "size": 2518
     },
     "scripts/runtime-truth-1140.mjs": {
-      "sha256": "6e4d8fcbea7d5b365a8218066beab28d2b6a82004264808db10e49e179331a29",
+      "sha256": "abdcff1c99742b6ff735627953f2988aacb6a4bcbcc0149ad539ffdca35d501c",
       "size": 4549
     },
     "scripts/trial-data-integrity-1141.mjs": {
@@ -176,7 +176,7 @@
       "size": 3601
     },
     "scripts/workspace-smoke.mjs": {
-      "sha256": "fd5249c7cd3234af654636028cc56022b1153e9d6d11de66a733b05c2a63f57c",
+      "sha256": "dd5d540a731c319d200848272bfbd28014d6795bb02e262f6dfecd020f10643d",
       "size": 1050
     },
     "scripts/multimind-reliability.mjs": {
