@@ -17,8 +17,18 @@ const versions=[pkg.version,lock.version,lock.packages?.['']?.version,tauri.vers
 if(new Set(versions).size!==1) throw new Error('Version mismatch: '+versions.join(','));
 if(!cargoToml.includes(`version = "${pkg.version}"`)) throw new Error('Cargo.toml version mismatch');
 if(!cargoLock.includes(`name = "fleet-desktop"\nversion = "${pkg.version}"`)) throw new Error('Cargo.lock root version mismatch');
-if(pkg.version!=='1.61.3') throw new Error('Expected workspace version 1.61.3');
-if(!html.includes('— إصدار 1.61.3 — 2026-09-27')) throw new Error('Visible header version/date drift');
+if(pkg.version!=='1.61.6') throw new Error('Expected workspace version 1.61.6');
+if(!html.includes('— إصدار 1.61.6 — 2026-09-29')) throw new Error('Visible header version/date drift');
+
+// NABA_STATE.md must exist and stay in lockstep with the shipped version — this is the
+// mechanical enforcement for the "don't restart from zero every session" continuity rule
+// (see NABA_STATE.md itself). A prose rule nobody is forced to update is not a durable
+// rule; this check makes forgetting to update it a failing build, same as any other
+// version-drift check above.
+const state=read('NABA_STATE.md');
+const stateVerMatch=state.match(/LAST_SHIPPED_VERSION:\s*([0-9.]+(?:-[A-Za-z0-9.]+)?)/);
+if(!stateVerMatch) throw new Error('NABA_STATE.md missing LAST_SHIPPED_VERSION marker');
+if(stateVerMatch[1]!==pkg.version) throw new Error('NABA_STATE.md LAST_SHIPPED_VERSION ('+stateVerMatch[1]+') out of sync with pkg.version ('+pkg.version+') — update NABA_STATE.md before shipping');
 const buildScript=read('BUILD_WINDOWS.ps1');
 for(const marker of ['npm run test:all','naba-code-guardian.mjs --verify','cargo check --manifest-path src-tauri/Cargo.toml --locked']) if(!buildScript.includes(marker)) throw new Error('Build gate missing '+marker);
 const caps=JSON.parse(read('src-tauri/capabilities/default.json'));
@@ -34,7 +44,7 @@ for(const marker of [
   'function nabaAiExecutiveThink(','function nabaAiEvidenceConflict(','hard_governance_reject','decisionState:decisionState','independentFirstPass:true','NABA_REFLECTION_VERSION=','function nabaAiReflect(','function nabaAiContinuousEval(','function nabaAiResearch(','Contrarian / Red Team','function nabaAiMultiMindBenchmark(',
   'Feasibility & Implementation Judge','function nabaAiFeasibilityScore(',"NABA_HYBRID_VERSION='2026-09-07.1'",
   'function nabaAiRouteIntelligence(','function nabaAiLocalStructuredSolve(','function nabaAiHybridSolve(',
-  'local_only','deep_research','preferZeroToken:true','externalTokens:0',"var APP_VERSION = '1.61.3'",
+  'local_only','deep_research','preferZeroToken:true','externalTokens:0',"var APP_VERSION = '1.61.6'",
   'function nabaSecureInvoke(','secure_secret_set','saveFirebaseSyncCredentials','requestId:(crypto.randomUUID'
 ]) if(!html.includes(marker)) throw new Error('Missing marker: '+marker);
 
