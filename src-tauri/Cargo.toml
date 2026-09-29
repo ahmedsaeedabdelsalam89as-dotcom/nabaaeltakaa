@@ -1,6 +1,6 @@
 [package]
 name = "fleet-desktop"
-version = "1.61.3"
+version = "1.61.6"
 description = "A Tauri App"
 authors = ["you"]
 edition = "2021"
@@ -31,4 +31,3 @@ reqwest = { version = "0.12", default-features = false, features = ["json", "rus
 # المدمجة فى WebView2 (مؤكَّد رسميًا من دعم Microsoft نفسه). يعمل بالكامل دون اتصال إنترنت بعد تنزيل
 # النموذج مرة واحدة، ويدعم العربية ضمن 99 لغة (نموذج Whisper متعدد اللغات).
 tauri-plugin-stt = "0.2"
-
