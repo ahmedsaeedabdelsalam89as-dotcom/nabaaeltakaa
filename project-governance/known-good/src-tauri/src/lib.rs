@@ -129,7 +129,7 @@ async fn gmail_api_request(method: String, path: String, access_token: String, b
 }
 
 
-const SECURE_SECRET_NAMES: &[&str] = &["tracking_token", "phone_bridge_secret", "firebase_auth", "firebase_password", "whatsapp_token", "lan_pair_token"];
+const SECURE_SECRET_NAMES: &[&str] = &["tracking_token", "phone_bridge_secret", "firebase_auth", "firebase_password", "whatsapp_token", "lan_pair_token", "anthropic_api_key", "openai_api_key"];
 
 fn validate_secure_secret_name(name: &str) -> Result<&str, String> {
     let n = name.trim();
