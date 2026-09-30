@@ -244,6 +244,46 @@ fn secure_secret_delete(name: String) -> Result<bool, String> {
 
 
 
+// أُضيفت 2026-09-30 — نفس مشكلة CORS الموضحة أعلى لتتبع Sactracking، لكن هنا مع
+// api.anthropic.com و api.openai.com: نافذة تطبيق Tauri تفتح بأصل (origin) من نوع بروتوكول
+// تطبيق مخصص، وسيرفرات Anthropic/OpenAI ترفض هذا النوع من الأصول فى فحص CORS الخاص بها —
+// فيفشل fetch() من JavaScript برسالة عامة (TypeError) قبل وصول الطلب للخدمة أصلًا، حتى مع
+// مفتاح صحيح ومحفوظ بأمان ومساحة اتصال شبكي سليمة تمامًا (تم تأكيد هذا فعليًا على جهاز
+// المستخدم: نفس الطلب بالضبط ينجح من متصفح عادي https ويفشل فقط من داخل نافذة التطبيق).
+// الحل: نفس أسلوب tracking_api_get تمامًا — الاتصال من Rust مباشرة (لا يخضع لـ CORS إطلاقًا).
+// المفتاح يُمرَّر من الذاكرة وقت الاستخدام فقط (بعد قراءته من DPAPI فى JS)، ولا يُخزَّن ولا
+// يُسجَّل هنا أبدًا — فقط يُستخدم لحظيًا فى هيدر الطلب الصادر.
+#[derive(serde::Serialize)]
+struct CloudAiApiResponse { ok: bool, status: u16, body: String }
+
+const MAX_CLOUD_AI_RESPONSE_BYTES: u64 = 2 * 1024 * 1024;
+const MAX_CLOUD_AI_REQUEST_BYTES: usize = 512 * 1024;
+
+#[tauri::command]
+async fn cloud_ai_api_request(provider: String, api_key: String, body: String) -> Result<CloudAiApiResponse, String> {
+    let api_key = api_key.trim();
+    if api_key.is_empty() || api_key.len() > 4096 { return Err("مفتاح الذكاء السحابي غير صالح".into()); }
+    if body.is_empty() || body.len() > MAX_CLOUD_AI_REQUEST_BYTES { return Err("حجم طلب الذكاء السحابي غير صالح".into()); }
+    let (url, is_anthropic) = match provider.as_str() {
+        "anthropic" => ("https://api.anthropic.com/v1/messages", true),
+        "openai" => ("https://api.openai.com/v1/chat/completions", false),
+        _ => return Err("مزوّد ذكاء سحابي غير مدعوم".into()),
+    };
+    let client = reqwest::Client::builder()
+        .timeout(std::time::Duration::from_secs(45))
+        .redirect(reqwest::redirect::Policy::none())
+        .build().map_err(|e| format!("تعذر تهيئة الاتصال بالذكاء السحابي: {}", e))?;
+    let mut req = client.post(url).header("content-type", "application/json").body(body);
+    req = if is_anthropic {
+        req.header("x-api-key", api_key).header("anthropic-version", "2023-06-01")
+    } else {
+        req.header("authorization", format!("Bearer {}", api_key))
+    };
+    let resp = req.send().await.map_err(|e| format!("تعذر الاتصال بالذكاء السحابي: {}", e))?;
+    let (status, ok, resp_body) = bounded_response_text(resp, MAX_CLOUD_AI_RESPONSE_BYTES, "الذكاء السحابي").await?;
+    Ok(CloudAiApiResponse { ok, status, body: resp_body })
+}
+
 #[tauri::command]
 fn certification_mode() -> bool {
     std::env::var("NABA_CERTIFY_RUNTIME").map(|v| v == "1").unwrap_or(false)
@@ -273,7 +313,7 @@ pub fn run() {
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_process::init())
         .plugin(tauri_plugin_stt::init())
-        .invoke_handler(tauri::generate_handler![tracking_api_get, phone_bridge_post, gmail_api_request, secure_secret_set, secure_secret_get, secure_secret_delete, certification_mode, certification_write_report])
+        .invoke_handler(tauri::generate_handler![tracking_api_get, phone_bridge_post, gmail_api_request, cloud_ai_api_request, secure_secret_set, secure_secret_get, secure_secret_delete, certification_mode, certification_write_report])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
