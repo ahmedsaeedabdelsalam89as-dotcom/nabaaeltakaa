@@ -166,8 +166,9 @@ header.topbar h1{
 #sidebarToggleBtn:hover{background:var(--card2);border-color:var(--gold);box-shadow:0 0 0 3px rgba(201,162,39,.15);}
 .searchbox{flex:1;min-width:220px;position:relative;}
 .searchbox input{
-  width:100%;padding:10px 14px;border-radius:8px;border:1px solid var(--border);
-  background:var(--card);color:var(--text);font-size:14px;transition:border-color .2s ease, box-shadow .2s ease;
+  width:100%;padding:12px 16px;border-radius:8px;border:2px solid var(--gold);
+  background:var(--card);color:var(--text);font-size:15px;font-weight:600;transition:border-color .2s ease, box-shadow .2s ease;
+  box-shadow:0 0 0 2px rgba(201,162,39,.10);
 }
 .searchbox input:focus{outline:none;border-color:var(--gold);box-shadow:0 0 0 3px rgba(201,162,39,.18);}
 #searchResults{
@@ -6856,9 +6857,12 @@ return ctor.prototype=parent.prototype,child.prototype=new ctor,child.__super__=
       var cardInner;
       if (latest) {
         var isImage = /^image\//.test(latest.mime_type || '') || /^(jpg|jpeg|png|bmp|webp|gif)$/.test(latest.ext || '');
+        var isPdfDoc = latest.ext === 'pdf' || /pdf/.test(latest.mime_type || '');
         var thumb = isImage
           ? '<img src="' + nabaImageAttribute(latest.data_url) + '" data-naba-style="width:100%;height:90px;object-fit:cover;border-radius:6px;">'
-          : '<div data-naba-style="width:100%;height:90px;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.04);border-radius:6px;font-size:28px;">' + (latest.ext === 'pdf' ? '📕' : '📄') + '</div>';
+          : isPdfDoc
+          ? '<div data-naba-style="width:100%;height:90px;overflow:hidden;border-radius:6px;border:1px solid var(--line);background:#fff;"><embed src="' + escapeHtml(latest.data_url || '') + '#toolbar=0&navpanes=0&view=FitH" type="application/pdf" data-naba-style="width:100%;height:260px;pointer-events:none;"></div>'
+          : '<div data-naba-style="width:100%;height:90px;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.04);border-radius:6px;font-size:28px;">📄</div>';
         cardInner = '<div class="vd-doctype-view" data-id="' + escapeHtml(latest.id) + '" data-naba-style="cursor:pointer;">' + thumb + '</div>' +
           '<div class="small-note" data-naba-style="margin-top:4px;font-size:10px;">' + fmtTime(latest.added_at) + (docs.length > 1 ? ' — و' + (docs.length - 1) + ' أقدم' : '') + '</div>';
       } else {
@@ -9219,7 +9223,7 @@ var TRK_LIVE_DEFAULT_BASE = 'https://app.sactracking.com/UCIC/api';
   PAGE_RENDERERS.trackmonitor = renderTrackMonitorPage;
 
   /* تحديثات تطبيق Tauri/Windows — مستعادة من النسخة المكتبية الأصلية ومحدّثة للنسخة الحالية. */
-  var APP_VERSION = '1.61.6';
+  var APP_VERSION = '1.62.0';
   var APP_UPDATE_REPO = 'ahmedsaeedabdelsalam89as-dotcom/nabaaeltakaa';
   var APP_UPDATE_AUTO_CHECK_DONE = false;
 
@@ -20323,6 +20327,8 @@ function computeMaintenanceOptimization(){var f=computePredictiveFailureEngine()
     if (/خطر|مخاطر|اولويات|أولويات|قرار|قرارات/.test(q)) return 'fleet_decisions';
     if (/صيان|عطل|ورشه|ورشة/.test(q)) return 'maintenance';
     if (/وقود|ديزل|بنزين|تفويل/.test(q)) return 'fuel';
+    if (/(اكتر|أكثر|اقل|أقل|متوسط).{0,15}(سائق|سواق|ساعات)|ساعات.{0,10}(تشغيل|عمل)/.test(q)) return 'driver_hours_report';
+    if (/(19|20)\d{2}/.test(q) && /(قبل|بعد|اقدم|احدث)/.test(q) && /(موديل|سنه الصنع|سنة الصنع|مركب|سياره|سيارة|عربي)/.test(q)) return 'fleet_age_report';
     if (/سائق|سواق/.test(q)) return 'drivers';
     if (/ذاكر|تذكر|افتكر|خبره سابق|خبرة سابق|ما الذي تعلم|ماذا تعلم/.test(q)) return 'cognitive_memory';
     if (/دليل|ادله|أدلة|مصدر|اثبات|إثبات|موثوقية الاستنتاج|لماذا تعتقد/.test(q)) return 'evidence_graph';
@@ -20444,6 +20450,31 @@ function computeMaintenanceOptimization(){var f=computePredictiveFailureEngine()
   registerNabaAiSkill('world_model', {department:'operations',requires:[],description:'حالة تشغيلية ومحاكاة بدائل محافظة مبنية على الأدلة',run:function(x){ var p=getNabaQuestionPlate(x.command); return p?nabaAiSimulateVehicle(p,nabaAiScenarioActionsFromText(x.command)):{ok:false,message:'حدد رقم لوحة المركبة'}; }});
   registerNabaAiSkill('copilot', {department:'ai',requires:[],description:'المساعد العام',run:function(x){ return {ok:true,needsCopilot:true,command:x.command}; }});
 
+  registerNabaAiSkill('driver_hours_report', {department:'operations',requires:[],description:'ترتيب السائقين حسب ساعات التشغيل، مع فلترة اختيارية بالمشروع',run:function(x){
+    var q = normalizeArabicNameLite(String(x.command||''));
+    var mode = /اقل|أقل/.test(q) ? 'min' : (/متوسط/.test(q) ? 'avg' : 'max');
+    var pool = nabaAiApprovedDrivers();
+    var projMatch = null, allProjects = {};
+    pool.forEach(function(d){ (d.projects||[]).forEach(function(p){ if(p) allProjects[p]=true; }); });
+    Object.keys(allProjects).forEach(function(p){ var pn=normalizeArabicNameLite(p); if(pn && q.indexOf(pn)!==-1) projMatch=p; });
+    var rows = pool.filter(function(d){ return !projMatch || (d.projects||[]).indexOf(projMatch)!==-1; });
+    var withData = rows.filter(function(d){ return (d.days_recorded||0)>0 || (d.total_movement_hours||0)>0; });
+    if (!rows.length) return {ok:false,message:'لا يوجد سائقون مطابقون'+(projMatch?(' للمشروع: '+projMatch):'')+'.'};
+    if (!withData.length) return {ok:true,data:{mode:mode,project:projMatch,rows:[],totalCount:rows.length,message:'لا توجد بيانات ساعات مسجلة'+(projMatch?(' فى مشروع '+projMatch):'')+' (العدد الكلي: '+rows.length+' سائق).'}};
+    var sorted = withData.slice().sort(function(a,b){ return mode==='min' ? ((a.total_movement_hours||0)-(b.total_movement_hours||0)) : ((b.total_movement_hours||0)-(a.total_movement_hours||0)); });
+    return {ok:true,data:{mode:mode,project:projMatch,rows:sorted.map(function(d){return {name:d.name,hours:d.total_movement_hours||0,idle:d.total_idle_hours||0,days:d.days_recorded||0};}),totalCount:rows.length,withDataCount:withData.length}};
+  }});
+  registerNabaAiSkill('fleet_age_report', {department:'fleet',requires:[],description:'عدد/قائمة المركبات الأقدم أو الأحدث من سنة صنع معيّنة',run:function(x){
+    var q = normalizeArabicNameLite(String(x.command||''));
+    var yearMatch = q.match(/(19|20)\d{2}/);
+    if (!yearMatch) return {ok:false,message:'حدد سنة (مثال: قبل 2010).'};
+    var year = parseInt(yearMatch[0],10);
+    var before = /قبل|اقدم/.test(q), after = /بعد|احدث/.test(q);
+    if (!before && !after) before = true;
+    var rows = (APP.FLEET||[]).filter(function(v){ var y=parseInt(String(v.year||'').replace(/\D/g,''),10); if(!y) return false; return before ? (y<year) : (y>year); });
+    return {ok:true,data:{year:year,before:before,rows:rows.map(function(v){return {plate:v.plate,brand:v.brand,model:v.model,year:v.year,worksite:v.worksite};}),count:rows.length,totalFleet:(APP.FLEET||[]).length}};
+  }});
+
 
   /* NABA AI Core v4 — Unified Command Center + local voice I/O */
   var NABA_AI_COMMAND_LAST_TEXT = '';
@@ -20516,6 +20547,22 @@ function computeMaintenanceOptimization(){var f=computePredictiveFailureEngine()
       return mo.length?mh+'\n'+mo.slice(0,6).map(function(r,i){return (i+1)+') '+r.plate+' — '+(r.status||'—')+(r.daysOpen!=null?' — '+r.daysOpen+' يوم':'');}).join('\n'):mh+'\nلا توجد صيانة مفتوحة.';
     }
     if (packet.intent === 'data_confidence' && data) return 'ثقة البيانات: '+(data.score==null?'—':data.score+'%')+' | '+((data.issues||[]).join('، ')||'لا توجد ملاحظات جوهرية');
+    if (packet.intent === 'driver_hours_report' && data) {
+      if (data.message) return data.message;
+      var dh = data.rows||[];
+      if (!dh.length) return 'لا توجد بيانات ساعات مسجلة'+(data.project?(' فى مشروع '+data.project):'')+'.';
+      if (data.mode==='avg') {
+        var sum=dh.reduce(function(s,r){return s+r.hours;},0), avg=sum/dh.length;
+        return 'متوسط ساعات التشغيل'+(data.project?(' فى مشروع '+data.project):' على كل المشاريع')+': '+avg.toFixed(1)+' ساعة (مبني على '+dh.length+' سائق لديهم بيانات مسجلة من إجمالي '+data.totalCount+').';
+      }
+      var top=dh[0];
+      return (data.mode==='min'?'أقل سائق فى ساعات التشغيل':'أكثر سائق فى ساعات التشغيل')+(data.project?(' فى مشروع '+data.project):'')+': '+top.name+' — '+top.hours.toFixed(1)+' ساعة تشغيل ('+top.idle.toFixed(1)+' ساعة توقف، '+top.days+' يوم مسجل).';
+    }
+    if (packet.intent === 'fleet_age_report' && data) {
+      var label = data.before ? ('أقدم من '+data.year) : ('أحدث من '+data.year);
+      var head = 'عدد المركبات '+label+': '+data.count+' من إجمالي '+data.totalFleet+' مركبة.';
+      return data.rows.length ? head+'\n'+data.rows.slice(0,10).map(function(r,i){return (i+1)+') '+r.plate+' — '+r.brand+' '+r.model+' ('+r.year+') — '+(r.worksite||'—');}).join('\n') : head;
+    }
     if (packet.intent === 'driver_decision' && data) return nabaAiCompactValue(data,0);
     return nabaAiCompactValue(data,0);
   }
@@ -21757,19 +21804,28 @@ function computeMaintenanceOptimization(){var f=computePredictiveFailureEngine()
     if (!key) throw new Error('لا يوجد مفتاح OpenAI محفوظ');
     var ctx = buildNabaAgentContext(problem);
     var brief = { recommended: structured && structured.executive && structured.executive.recommended, alternatives: structured && structured.executive && structured.executive.alternatives, confidence: structured && structured.executive && structured.executive.confidence, challenge: structured && structured.executive && structured.executive.criticalChallenge };
-    var res = await fetchWithTimeout('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: { 'content-type': 'application/json', 'authorization': 'Bearer ' + key },
-      body: JSON.stringify({
+    var payload = {
         model: 'gpt-5', max_tokens: 1000,
         messages: [
           { role: 'system', content: 'أنت طبقة صياغة داخل نظام إدارة أسطول اسمه NABA. أجب بالعربية الفصحى الطبيعية فقط. لا تخترع حقائق أو أرقام غير موجودة فى السياق. ميّز بوضوح بين المؤكَّد والافتراض. قدّم حلاً عمليًا بخطوات قصيرة قابلة للتنفيذ، مع المخاطر ومؤشر النجاح وخطة بديلة إن أمكن. لا تنفّذ أي إجراء خارجي أبدًا — فقط اقترح.' },
           { role: 'user', content: 'المشكلة: ' + nabaAiCompactProblem(problem) + '\n\nالسياق الداخلي:\n' + ctx + '\n\nنتيجة المحركات الحتمية:\n' + JSON.stringify(brief) }
         ]
-      })
-    }, 45000);
-    if (!res.ok) throw new Error('فشل الاتصال بـ OpenAI: HTTP ' + res.status);
-    var data = await readResponseJsonBounded(res, 2*1024*1024);
+    };
+    var inv = window.__TAURI__ && window.__TAURI__.core && window.__TAURI__.core.invoke;
+    var data;
+    if (inv) {
+      var r = await inv('cloud_ai_api_request', { provider: 'openai', apiKey: key, body: JSON.stringify(payload) });
+      if (!r.ok) throw new Error('فشل الاتصال بـ OpenAI: HTTP ' + r.status);
+      data = r.body ? JSON.parse(r.body) : {};
+    } else {
+      var res = await fetchWithTimeout('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', 'authorization': 'Bearer ' + key },
+        body: JSON.stringify(payload)
+      }, 45000);
+      if (!res.ok) throw new Error('فشل الاتصال بـ OpenAI: HTTP ' + res.status);
+      data = await readResponseJsonBounded(res, 2*1024*1024);
+    }
     var text = (data && data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content) || '';
     nabaAiUsageBump('externalCalls');
     return { ok: !!text, engine: 'cloud_openai', model: 'gpt-5', text: text, externalTokens: (data && data.usage && (data.usage.prompt_tokens + data.usage.completion_tokens)) || null, privacy: 'sent_to_openai_directly' };
@@ -21803,17 +21859,26 @@ function computeMaintenanceOptimization(){var f=computePredictiveFailureEngine()
     if (!key) throw new Error('لا يوجد مفتاح Anthropic محفوظ');
     var ctx = buildNabaAgentContext(problem);
     var brief = { recommended: structured && structured.executive && structured.executive.recommended, alternatives: structured && structured.executive && structured.executive.alternatives, confidence: structured && structured.executive && structured.executive.confidence, challenge: structured && structured.executive && structured.executive.criticalChallenge };
-    var res = await fetchWithTimeout('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: { 'content-type': 'application/json', 'x-api-key': key, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
-      body: JSON.stringify({
+    var payload = {
         model: 'claude-opus-5', max_tokens: 1000,
         system: 'أنت طبقة صياغة داخل نظام إدارة أسطول اسمه NABA. أجب بالعربية الفصحى الطبيعية فقط. لا تخترع حقائق أو أرقام غير موجودة فى السياق. ميّز بوضوح بين المؤكَّد والافتراض. قدّم حلاً عمليًا بخطوات قصيرة قابلة للتنفيذ، مع المخاطر ومؤشر النجاح وخطة بديلة إن أمكن. لا تنفّذ أي إجراء خارجي أبدًا — فقط اقترح.',
         messages: [{ role: 'user', content: 'المشكلة: ' + nabaAiCompactProblem(problem) + '\n\nالسياق الداخلي:\n' + ctx + '\n\nنتيجة المحركات الحتمية:\n' + JSON.stringify(brief) }]
-      })
-    }, 45000);
-    if (!res.ok) throw new Error('فشل الاتصال بـ Anthropic: HTTP ' + res.status);
-    var data = await readResponseJsonBounded(res, 2*1024*1024);
+    };
+    var inv = window.__TAURI__ && window.__TAURI__.core && window.__TAURI__.core.invoke;
+    var data;
+    if (inv) {
+      var r = await inv('cloud_ai_api_request', { provider: 'anthropic', apiKey: key, body: JSON.stringify(payload) });
+      if (!r.ok) throw new Error('فشل الاتصال بـ Anthropic: HTTP ' + r.status);
+      data = r.body ? JSON.parse(r.body) : {};
+    } else {
+      var res = await fetchWithTimeout('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', 'x-api-key': key, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
+        body: JSON.stringify(payload)
+      }, 45000);
+      if (!res.ok) throw new Error('فشل الاتصال بـ Anthropic: HTTP ' + res.status);
+      data = await readResponseJsonBounded(res, 2*1024*1024);
+    }
     var text = (data && data.content && data.content[0] && data.content[0].text) || '';
     nabaAiUsageBump('externalCalls');
     return { ok: !!text, engine: 'cloud_claude', model: 'claude-opus-5', text: text, externalTokens: (data && data.usage && (data.usage.input_tokens + data.usage.output_tokens)) || null, privacy: 'sent_to_anthropic_directly' };
@@ -21871,6 +21936,11 @@ function computeMaintenanceOptimization(){var f=computePredictiveFailureEngine()
   window.connectNabaEmailSession=connectNabaEmailSession;window.searchNabaEmail=searchNabaEmail;window.selectNabaEmail=selectNabaEmail;window.prepareNabaEmailReply=prepareNabaEmailReply;window.sendNabaEmailReply=sendNabaEmailReply;
   window.NabaEmailIntelligence={version:NABA_EMAIL_VERSION,deepContext:nabaEmailDeepContext,search:searchNabaEmail,prepareReply:prepareNabaEmailReply};
   var VERSION_LOG = [
+    {date:'2026-09-30',version:'1.62.0',title:'🧠 مهارتان جديدتان: ترتيب السائقين بالساعات + أعمار الأسطول، إصلاح CORS، إصلاح عرض مستندات PDF',items:[
+      "أمر طبيعي جديد (كتابة أو صوت): \u0027اكتر/اقل/متوسط سائق فى الساعات\u0027 (مع فلترة اختيارية بالمشروع) و\u0027سيارات موديل قبل/بعد سنة كذا\u0027 — يحسبان من بيانات APP.DRIVERS/APP.FLEET الحقيقية مباشرة، بدون أي اتصال إنترنت.",
+      "إصلاح CORS لمكالمات Claude/OpenAI السحابية المباشرة ليمرّا عبر أمر Tauri الصحيح (cloud_ai_api_request) بدل فشلهما الصامت فى البيئة المُجمَّعة.",
+      "الصورة المصغّرة لمستند PDF فى بطاقة المركبة كانت تعرض أيقونة ثابتة بدل معاينة فعلية — الآن تعرض معاينة PDF حقيقية."
+    ]},
     {date:'2026-09-29',version:'1.61.6',title:'🔍 إصلاح حقيقي: فشل محرك OCR كان يُبتلَع بصمت',items:[
       'محرك قراءة النص من الصور (Tesseract، يُحمَّل من الإنترنت عند أول استخدام) كان لو فشل تحميله (لا اتصال إنترنت وقتها، أو حجب الشبكة له) — المستند يُحفظ بصمت بحقول فارغة (بلا تصنيف نوع تلقائي، بلا استنتاج لوحة/سائق) وبدون أي رسالة تشرح السبب، فيبدو للمستخدم أن "الذكاء" مش شغال دون توضيح ليه.',
       'الآن أي فشل فى تحميل محرك OCR يظهر كتحذير صريح للمستخدم فور حفظ المستند: "تعذّر تشغيل محرك قراءة النص — يحتاج اتصال إنترنت لتحميله أول مرة"، مع توضيح أن الحقول التلقائية لم تُستنتَج وتحتاج مراجعة يدوية. المستند نفسه يُحفظ دائمًا (الفشل هنا لا يمنع الحفظ، فقط التصنيف التلقائي).',
