@@ -9223,7 +9223,7 @@ var TRK_LIVE_DEFAULT_BASE = 'https://app.sactracking.com/UCIC/api';
   PAGE_RENDERERS.trackmonitor = renderTrackMonitorPage;
 
   /* تحديثات تطبيق Tauri/Windows — مستعادة من النسخة المكتبية الأصلية ومحدّثة للنسخة الحالية. */
-  var APP_VERSION = '1.62.0';
+  var APP_VERSION = '1.61.6';
   var APP_UPDATE_REPO = 'ahmedsaeedabdelsalam89as-dotcom/nabaaeltakaa';
   var APP_UPDATE_AUTO_CHECK_DONE = false;
 
@@ -21936,7 +21936,7 @@ function computeMaintenanceOptimization(){var f=computePredictiveFailureEngine()
   window.connectNabaEmailSession=connectNabaEmailSession;window.searchNabaEmail=searchNabaEmail;window.selectNabaEmail=selectNabaEmail;window.prepareNabaEmailReply=prepareNabaEmailReply;window.sendNabaEmailReply=sendNabaEmailReply;
   window.NabaEmailIntelligence={version:NABA_EMAIL_VERSION,deepContext:nabaEmailDeepContext,search:searchNabaEmail,prepareReply:prepareNabaEmailReply};
   var VERSION_LOG = [
-    {date:'2026-09-30',version:'1.62.0',title:'🧠 مهارتان جديدتان: ترتيب السائقين بالساعات + أعمار الأسطول، إصلاح CORS، إصلاح عرض مستندات PDF',items:[
+    {date:'2026-09-30',version:'1.61.6',title:'🧠 مهارتان جديدتان: ترتيب السائقين بالساعات + أعمار الأسطول، إصلاح CORS، إصلاح عرض مستندات PDF',items:[
       "أمر طبيعي جديد (كتابة أو صوت): \u0027اكتر/اقل/متوسط سائق فى الساعات\u0027 (مع فلترة اختيارية بالمشروع) و\u0027سيارات موديل قبل/بعد سنة كذا\u0027 — يحسبان من بيانات APP.DRIVERS/APP.FLEET الحقيقية مباشرة، بدون أي اتصال إنترنت.",
       "إصلاح CORS لمكالمات Claude/OpenAI السحابية المباشرة ليمرّا عبر أمر Tauri الصحيح (cloud_ai_api_request) بدل فشلهما الصامت فى البيئة المُجمَّعة.",
       "الصورة المصغّرة لمستند PDF فى بطاقة المركبة كانت تعرض أيقونة ثابتة بدل معاينة فعلية — الآن تعرض معاينة PDF حقيقية."
